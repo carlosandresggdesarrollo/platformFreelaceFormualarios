@@ -1,0 +1,26 @@
+# Caddy: HTTPS automático para el dominio + acceso directo por IP/HTTP.
+carlo-code-dev.com, www.carlo-code-dev.com {
+    encode gzip
+    # Terminal SSH web: WebSocket al puente Node.
+    @ssh path /ssh-ws*
+    reverse_proxy @ssh ssh_bridge:4000
+    # Permite subidas grandes sin cortes (timeouts amplios). Caddy NO limita el
+    # tamaño del cuerpo por defecto, así que +3 GB pasa sin problema.
+    reverse_proxy web_platform:80 {
+        transport http {
+            read_timeout 0
+            write_timeout 0
+        }
+    }
+}
+
+# Acceso por IP o sin dominio (HTTP)
+:80 {
+    reverse_proxy web_platform:80
+}
+
+# HTTPS local/auto-firmado (útil para pruebas por IP)
+:443 {
+    tls internal
+    reverse_proxy web_platform:80
+}

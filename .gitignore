@@ -1,0 +1,193 @@
+# ===================================
+# Node.js / React / TypeScript
+# ===================================
+mysql-data/
+log/
+.claude/
+--.claude/
+.claude
+
+src/vendor/
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+package-lock.json
+yarn.lock
+.npm
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+.nuxt/
+.cache/
+.parcel-cache/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# TypeScript
+*.tsbuildinfo
+.tsc/
+
+# ===================================
+# .NET / C#
+# ===================================
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+
+# NuGet
+*.nupkg
+*.snupkg
+**/packages/*
+!**/packages/build/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Rider
+.idea/
+*.sln.iml
+
+# ===================================
+# PHP
+# ===================================
+vendor/
+composer.lock
+composer.phar
+*.log
+
+# Laravel
+.env.backup
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+npm-debug.log
+storage/*.key
+.rr.yaml
+
+# Symfony
+/var/
+/public/bundles/
+/public/uploads/
+
+# ===================================
+# Databases
+# ===================================
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+*.mdb
+
+# SQL dumps
+
+*.sql.gz
+*.dump
+
+# ===================================
+# IDEs and Editors
+# ===================================
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# JetBrains
+.idea/
+*.iml
+*.iws
+
+# ===================================
+# Docker
+# ===================================
+docker-compose.override.yml
+.dockerignore
+
+# ===================================
+# Testing
+# ===================================
+coverage/
+.nyc_output/
+*.lcov
+.jest/
+test-results/
+cypress/videos/
+cypress/screenshots/
+
+# ===================================
+# OS Files
+# ===================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ===================================
+# Temporary files
+# ===================================
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# ===================================
+# Logs
+# ===================================
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ===================================
+# API Keys and Secrets
+# ===================================
+secrets/
+*.pem
+*.key
+*.cert
+.env*
+!.env.example
+credentials.json

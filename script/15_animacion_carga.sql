@@ -1,0 +1,1 @@
+ALTER TABLE home_config ADD COLUMN IF NOT EXISTS animacionCarga VARCHAR(50) NOT NULL DEFAULT 'pulso-logo';

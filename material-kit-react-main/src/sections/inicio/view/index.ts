@@ -1,0 +1,1 @@
+export { InicioView } from './inicio-view';

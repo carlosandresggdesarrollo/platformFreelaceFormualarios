@@ -1,0 +1,7 @@
+{
+    "name": "coeficiente/platform",
+    "description": "Platform Coeficiente Backend",
+    "require": {
+        "mercadopago/dx-php": "^2.0"
+    }
+}

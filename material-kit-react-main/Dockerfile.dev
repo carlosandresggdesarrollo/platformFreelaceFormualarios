@@ -1,0 +1,15 @@
+# Frontend React + Vite en modo desarrollo (hot reload)
+FROM node:20-bullseye
+
+WORKDIR /app
+
+# Instalar dependencias primero para aprovechar la cache de capas.
+# No hay yarn.lock en el repo, así que se resuelve en el build.
+COPY package.json ./
+RUN yarn install
+
+# El código se monta como volumen en docker-compose, por lo que no se copia aquí.
+EXPOSE 3039
+
+# --host expone el servidor fuera del contenedor (vite.config ya trae host: true).
+CMD ["yarn", "dev", "--host"]

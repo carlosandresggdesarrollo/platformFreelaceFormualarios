@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Chip from '@mui/material/Chip';
+import Alert from '@mui/material/Alert';
 import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
@@ -14,7 +15,10 @@ import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import DialogContent from '@mui/material/DialogContent';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import LinearProgress from '@mui/material/LinearProgress';
 import CircularProgress from '@mui/material/CircularProgress';
+import { useTheme as useMuiTheme } from '@mui/material/styles';
 
 import { useRouter } from 'src/routes/hooks';
 
@@ -29,6 +33,7 @@ import { Iconify } from 'src/components/iconify';
 import { ModuloHeader } from 'src/components/modulo-header/modulo-header';
 
 const API = `${CONFIG.apiBase}/Modules/ModuleFormularios/api/administrador.controller.formularios.php`;
+const API_IA = `${CONFIG.apiBase}/Modules/ModuleFormularios/api/administrador.controller.formularios.ia.php`;
 
 interface Formulario {
   idCuestionario: number;
@@ -45,6 +50,8 @@ interface Formulario {
 
 export function FormulariosListadoView() {
   const theme = useDashboardTheme();
+  const muiTheme = useMuiTheme();
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
   const router = useRouter();
 
   const [formularios, setFormularios] = useState<Formulario[]>([]);
@@ -54,6 +61,11 @@ export function FormulariosListadoView() {
   const [descripcion, setDescripcion] = useState('');
   const [creating, setCreating] = useState(false);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+
+  const [iaOpen, setIaOpen] = useState(false);
+  const [iaPrompt, setIaPrompt] = useState('');
+  const [iaLoading, setIaLoading] = useState(false);
+  const [iaError, setIaError] = useState('');
 
   const fetchData = useCallback(async () => {
     try {
@@ -120,6 +132,33 @@ export function FormulariosListadoView() {
     setTimeout(() => setCopiedToken(null), 2000);
   };
 
+  const handleCrearConIA = async () => {
+    if (!iaPrompt.trim()) return;
+    setIaLoading(true);
+    setIaError('');
+    try {
+      const token = getAccessToken();
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const d = await apiFetch<any>(API_IA, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ descripcion: iaPrompt.trim() }),
+      });
+      if (d.success && d.idCuestionario) {
+        setIaOpen(false);
+        setIaPrompt('');
+        router.push(`/formularios/editar/${d.idCuestionario}`);
+      } else {
+        setIaError(d.error || 'Error al crear el formulario con IA');
+      }
+    } catch (e: any) {
+      setIaError(e.message || 'Error de conexion');
+    } finally {
+      setIaLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
@@ -132,11 +171,17 @@ export function FormulariosListadoView() {
     <Box>
       <ModuloHeader titulo="Mis Formularios" subtitulo="Crea, edita y comparte tus formularios" />
 
-      <Box sx={{ display: 'flex', gap: 2, mt: 3, mb: 3 }}>
+      <Box sx={{ display: 'flex', gap: 2, mt: 3, mb: 3, flexWrap: 'wrap' }}>
         <Button variant="contained" startIcon={<Iconify icon="mdi:plus" />}
           onClick={() => setCrearOpen(true)}
           sx={{ bgcolor: theme.primary, fontWeight: 600, borderRadius: 2, '&:hover': { bgcolor: theme.primaryHover } }}>
           Nuevo formulario
+        </Button>
+        <Button variant="outlined" startIcon={<Iconify icon="mdi:robot-outline" />}
+          onClick={() => { setIaOpen(true); setIaError(''); }}
+          sx={{ borderColor: '#7C3AED', color: '#7C3AED', fontWeight: 600, borderRadius: 2,
+            '&:hover': { bgcolor: 'rgba(124,58,237,0.08)', borderColor: '#6D28D9' } }}>
+          Crear con IA
         </Button>
       </Box>
 
@@ -149,7 +194,71 @@ export function FormulariosListadoView() {
             Crear mi primer formulario
           </Button>
         </Card>
+      ) : isMobile ? (
+        /* ====== Mobile: Card layout ====== */
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {formularios.map((f) => (
+            <Card key={f.idCuestionario} sx={{ p: 2, background: theme.bgCard, boxShadow: theme.shadow, borderRadius: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography variant="body1" sx={{ fontWeight: 600, color: theme.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {f.titulo}
+                  </Typography>
+                  {f.descripcion && (
+                    <Typography variant="caption" sx={{ color: theme.textSecondary, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {f.descripcion}
+                    </Typography>
+                  )}
+                </Box>
+                <Chip label={f.estado} size="small" sx={{
+                  ml: 1, fontWeight: 600, flexShrink: 0,
+                  bgcolor: f.estado === 'publicado' ? 'rgba(76,175,80,0.15)' : 'rgba(255,152,0,0.15)',
+                  color: f.estado === 'publicado' ? '#4CAF50' : '#FF9800',
+                }} />
+              </Box>
+
+              <Box sx={{ display: 'flex', gap: 2, mb: 1.5 }}>
+                <Box sx={{ textAlign: 'center', flex: 1 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: theme.textPrimary }}>{f.totalPreguntas}</Typography>
+                  <Typography variant="caption" sx={{ color: theme.textSecondary }}>Preguntas</Typography>
+                </Box>
+                <Box sx={{ textAlign: 'center', flex: 1 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: '#2196F3' }}>{f.totalVisitas}</Typography>
+                  <Typography variant="caption" sx={{ color: theme.textSecondary }}>Visitas</Typography>
+                </Box>
+                <Box sx={{ textAlign: 'center', flex: 1 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: '#4CAF50' }}>{f.totalRespuestas}</Typography>
+                  <Typography variant="caption" sx={{ color: theme.textSecondary }}>Respuestas</Typography>
+                </Box>
+              </Box>
+
+              <Typography variant="caption" sx={{ color: theme.textSecondary, display: 'block', mb: 1 }}>
+                {new Date(f.fechaCreacion).toLocaleDateString('es-MX')}
+              </Typography>
+
+              <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
+                <IconButton size="small" onClick={() => router.push(`/formularios/editar/${f.idCuestionario}`)}
+                  sx={{ color: theme.primary }}>
+                  <Iconify icon="mdi:pencil-outline" width={20} />
+                </IconButton>
+                <IconButton size="small" onClick={() => router.push(`/formularios/stats/${f.idCuestionario}`)}
+                  sx={{ color: '#2196F3' }}>
+                  <Iconify icon="mdi:chart-bar" width={20} />
+                </IconButton>
+                <IconButton size="small" onClick={() => copyLink(f.compartirToken, f.slug)}
+                  sx={{ color: copiedToken === f.compartirToken ? '#4CAF50' : theme.textSecondary }}>
+                  <Iconify icon={copiedToken === f.compartirToken ? 'mdi:check' : 'mdi:link-variant'} width={20} />
+                </IconButton>
+                <IconButton size="small" onClick={() => handleEliminar(f.idCuestionario)}
+                  sx={{ color: '#F44336' }}>
+                  <Iconify icon="mdi:delete-outline" width={20} />
+                </IconButton>
+              </Box>
+            </Card>
+          ))}
+        </Box>
       ) : (
+        /* ====== Desktop: Table layout ====== */
         <Card sx={{ borderRadius: 2, overflow: 'hidden', background: theme.bgCard, boxShadow: theme.shadow }}>
           <Box sx={{ overflowX: 'auto' }}>
             <Table>
@@ -226,6 +335,78 @@ export function FormulariosListadoView() {
             <Button variant="contained" onClick={handleCrear} disabled={creating || !titulo.trim()}
               sx={{ bgcolor: theme.primary, '&:hover': { bgcolor: theme.primaryHover } }}>
               {creating ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : 'Crear'}
+            </Button>
+          </Box>
+        </DialogContent>
+      </Dialog>
+
+      {/* ====== AI Creation Dialog ====== */}
+      <Dialog open={iaOpen} onClose={() => { if (!iaLoading) setIaOpen(false); }} maxWidth="sm" fullWidth>
+        <DialogContent sx={{ p: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+            <Box sx={{
+              width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'linear-gradient(135deg, #7C3AED 0%, #2563EB 100%)',
+            }}>
+              <Iconify icon="mdi:robot-outline" width={22} sx={{ color: '#fff' }} />
+            </Box>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>Crear con IA</Typography>
+              <Typography variant="caption" sx={{ color: theme.textSecondary }}>
+                Powered by DeepSeek
+              </Typography>
+            </Box>
+          </Box>
+
+          <Typography variant="body2" sx={{ color: theme.textSecondary, mb: 2 }}>
+            Describe el formulario que quieres crear. Incluye las preguntas, opciones de respuesta,
+            tema visual, link de musica o imagen de fondo si lo deseas.
+          </Typography>
+
+          <TextField
+            fullWidth multiline rows={6} value={iaPrompt}
+            onChange={(e) => setIaPrompt(e.target.value)}
+            disabled={iaLoading}
+            placeholder={`Ejemplo:\nCreame una encuesta de satisfaccion del cliente con 5 preguntas.\nPreguntas sobre calidad del servicio, tiempo de espera, atencion del personal, limpieza y si nos recomendaria.\nCada pregunta con opciones: Excelente, Bueno, Regular, Malo.\nUsa el tema oscuro y esta musica de fondo: https://youtube.com/watch?v=...`}
+            sx={{ mb: 2, '& .MuiOutlinedInput-root': { fontSize: 14 } }}
+          />
+
+          {iaLoading && (
+            <Box sx={{ mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                <CircularProgress size={18} sx={{ color: '#7C3AED' }} />
+                <Typography variant="body2" sx={{ color: '#7C3AED', fontWeight: 600 }}>
+                  La IA esta creando tu formulario...
+                </Typography>
+              </Box>
+              <LinearProgress sx={{
+                borderRadius: 1,
+                bgcolor: 'rgba(124,58,237,0.1)',
+                '& .MuiLinearProgress-bar': { bgcolor: '#7C3AED' },
+              }} />
+            </Box>
+          )}
+
+          {iaError && (
+            <Alert severity="error" sx={{ mb: 2 }} onClose={() => setIaError('')}>
+              {iaError}
+            </Alert>
+          )}
+
+          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+            <Button onClick={() => setIaOpen(false)} disabled={iaLoading}
+              sx={{ color: theme.textSecondary }}>
+              Cancelar
+            </Button>
+            <Button variant="contained" onClick={handleCrearConIA}
+              disabled={iaLoading || !iaPrompt.trim()}
+              startIcon={iaLoading ? undefined : <Iconify icon="mdi:auto-fix" />}
+              sx={{
+                background: 'linear-gradient(135deg, #7C3AED 0%, #2563EB 100%)',
+                fontWeight: 600,
+                '&:hover': { background: 'linear-gradient(135deg, #6D28D9 0%, #1D4ED8 100%)' },
+              }}>
+              {iaLoading ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : 'Generar formulario'}
             </Button>
           </Box>
         </DialogContent>

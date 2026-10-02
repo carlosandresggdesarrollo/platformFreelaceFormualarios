@@ -81,9 +81,6 @@ CREATE TABLE IF NOT EXISTS ia_logs (
   INDEX idx_ialog_fecha (fecha)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-ALTER TABLE deepseek_config ADD COLUMN IF NOT EXISTS githubToken TEXT;
-ALTER TABLE deepseek_config ADD COLUMN IF NOT EXISTS githubClientId VARCHAR(100);
-
 -- ----------------------- AGENDA (hora para alarmas) -----------------------
 CREATE TABLE IF NOT EXISTS agenda_tareas (
   idTarea INT AUTO_INCREMENT PRIMARY KEY,

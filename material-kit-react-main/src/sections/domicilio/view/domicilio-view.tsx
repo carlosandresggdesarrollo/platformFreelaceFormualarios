@@ -12,9 +12,9 @@ import CircularProgress from '@mui/material/CircularProgress';
 
 import { useRouter } from 'src/routes/hooks';
 
-import { Iconify } from 'src/components/iconify';
-
 import { CONFIG } from 'src/config-global';
+
+import { Iconify } from 'src/components/iconify';
 
 // ----------------------------------------------------------------------
 

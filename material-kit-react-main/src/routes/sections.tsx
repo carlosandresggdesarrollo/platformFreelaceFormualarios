@@ -123,11 +123,7 @@ const renderFallback = () => (
 export const routesSection: RouteObject[] = [
   {
     path: '/',
-    element: (
-      <LoadingGate>
-        <InicioPage />
-      </LoadingGate>
-    ),
+    element: <Navigate to="sign-in" replace />,
   },
   {
     element: (
@@ -193,17 +189,17 @@ export const routesSection: RouteObject[] = [
   {
     path: 'sign-in',
     element: (
-      <LoadingGate>
+      <Suspense fallback={renderFallback()}>
         <SignInPage />
-      </LoadingGate>
+      </Suspense>
     ),
   },
   {
     path: 'sign-up',
     element: (
-      <LoadingGate>
+      <Suspense fallback={renderFallback()}>
         <SignUpPage2 />
-      </LoadingGate>
+      </Suspense>
     ),
   },
   {
@@ -226,17 +222,17 @@ export const routesSection: RouteObject[] = [
   {
     path: 'quiz',
     element: (
-      <LoadingGate>
+      <Suspense fallback={renderFallback()}>
         <QuizListPage />
-      </LoadingGate>
+      </Suspense>
     ),
   },
   {
     path: 'quiz/:id',
     element: (
-      <LoadingGate>
+      <Suspense fallback={renderFallback()}>
         <QuizResponderPage />
-      </LoadingGate>
+      </Suspense>
     ),
   },
   // FORMULARIO PUBLICO (link directo, slug opcional)

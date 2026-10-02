@@ -1,11 +1,19 @@
+name: plata-formularios
+
 services:
   web_platform:
     privileged: true
     build:
       context: docker/
       dockerfile: Dockerfile
-    container_name: administrador
+    image: plata_formularios/web:latest
+    container_name: plata_formularios_web
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
       - ./src/:/var/www/html/
@@ -14,11 +22,11 @@ services:
       - 8.8.8.8
       - 8.8.4.4
     ports:
-      - "80:80"
+      - "8085:80"
     depends_on:
       - mysql_platform
     networks:
-      platform_network:
+      plata_formularios_network:
         aliases:
           - platform_host
         ipv4_address: 172.28.0.9
@@ -26,8 +34,14 @@ services:
     build:
       context: ./material-kit-react-main
       dockerfile: Dockerfile.dev
-    container_name: frontend
+    image: plata_formularios/frontend:latest
+    container_name: plata_formularios_frontend
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "0.75"
+          memory: 1536M
     volumes:
       - ./material-kit-react-main:/app
       - /app/node_modules
@@ -39,11 +53,16 @@ services:
     depends_on:
       - web_platform
     networks:
-      platform_network:
+      plata_formularios_network:
         ipv4_address: 172.28.0.10
   mysql_platform:
     image: mariadb:10
-    container_name: administradordb
+    container_name: plata_formularios_db
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 1024M
     ports:
       - "3303:3306"
     volumes:
@@ -51,7 +70,6 @@ services:
       - ./script/01_base_datos.sql:/docker-entrypoint-initdb.d/01_base_datos.sql:ro
       - ./script/02_migraciones.sql:/docker-entrypoint-initdb.d/02_migraciones.sql:ro
       - ./script/07_proyecto_usuarios.sql:/docker-entrypoint-initdb.d/07_proyecto_usuarios.sql:ro
-      - ./script/08_deepseek.sql:/docker-entrypoint-initdb.d/08_deepseek.sql:ro
       - ./script/09_modulos_app.sql:/docker-entrypoint-initdb.d/09_modulos_app.sql:ro
       - ./script/12_home_admin.sql:/docker-entrypoint-initdb.d/12_home_admin.sql:ro
       - ./script/13_home_tema.sql:/docker-entrypoint-initdb.d/13_home_tema.sql:ro
@@ -64,18 +82,23 @@ services:
       - ./script/20_analytics.sql:/docker-entrypoint-initdb.d/20_analytics.sql:ro
       - ./script/21_colaborador.sql:/docker-entrypoint-initdb.d/21_colaborador.sql:ro
       - ./script/22_cliente_module.sql:/docker-entrypoint-initdb.d/22_cliente_module.sql:ro
-      - ./script/23_biotipos.sql:/docker-entrypoint-initdb.d/23_biotipos.sql:ro
+      - ./script/24_slug_formularios.sql:/docker-entrypoint-initdb.d/24_slug_formularios.sql:ro
     environment:
       - MYSQL_ROOT_PASSWORD=Kb.204.h3
-      - MYSQL_DATABASE=biotiposUnani
+      - MYSQL_DATABASE=formularios
     networks:
-      platform_network:
+      plata_formularios_network:
         aliases:
           - platform_db
         ipv4_address: 172.28.0.5
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
-    container_name: platform_phpmyadmin
+    container_name: plata_formularios_phpmyadmin
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256M
     links:
       - mysql_platform:mysql_platform
     ports:
@@ -85,12 +108,12 @@ services:
       - PMA_USER=root
       - PMA_PASSWORD=Kb.204.h3
     networks:
-      platform_network:
+      plata_formularios_network:
         aliases:
           - phpmyadmin_db
         ipv4_address: 172.28.0.6
 networks:
-  platform_network:
+  plata_formularios_network:
     driver: bridge
     ipam:
       config:

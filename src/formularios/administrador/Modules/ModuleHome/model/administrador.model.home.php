@@ -695,7 +695,7 @@ class HomeModel extends Conection
 
         // Config
         $r = mysqli_query($this->Connection, "SELECT tituloPrincipal, subtitulo, imagenFondo, tema, logo, animacionFondo, animacionCarga, animacionDuracion, animacionColor, registroActivo, nombreSitio FROM home_config WHERE idConfig = 1");
-        $result['config'] = $r && $r->num_rows > 0 ? $r->fetch_assoc() : ['tituloPrincipal' => '', 'subtitulo' => '', 'imagenFondo' => '', 'tema' => 'corporativo', 'logo' => null, 'animacionFondo' => 'minimalista', 'animacionCarga' => 'pulso-logo', 'animacionDuracion' => 2, 'animacionColor' => null, 'registroActivo' => '1', 'nombreSitio' => 'Biotipos Unani'];
+        $result['config'] = $r && $r->num_rows > 0 ? $r->fetch_assoc() : ['tituloPrincipal' => '', 'subtitulo' => '', 'imagenFondo' => '', 'tema' => 'corporativo', 'logo' => null, 'animacionFondo' => 'minimalista', 'animacionCarga' => 'pulso-logo', 'animacionDuracion' => 2, 'animacionColor' => null, 'registroActivo' => '1', 'nombreSitio' => 'Formularios Web'];
 
         // Nav
         $result['nav'] = [];

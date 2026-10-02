@@ -11,9 +11,9 @@ import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import CircularProgress from '@mui/material/CircularProgress';
 
-import { Iconify } from 'src/components/iconify';
-
 import { CONFIG } from 'src/config-global';
+
+import { Iconify } from 'src/components/iconify';
 
 // ----------------------------------------------------------------------
 

@@ -20,6 +20,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 
 import { useDashboardTheme } from 'src/hooks/use-dashboard-theme';
 
+import { CONFIG } from 'src/config-global';
 import { DashboardContent } from 'src/layouts/dashboard';
 
 import { Iconify } from 'src/components/iconify';
@@ -28,8 +29,6 @@ import { ModuloHeader } from 'src/components/modulo-header/modulo-header';
 import { AnalyticsCurrentVisits } from '../analytics-current-visits';
 import { AnalyticsWebsiteVisits } from '../analytics-website-visits';
 import { AnalyticsWidgetSummary } from '../analytics-widget-summary';
-
-import { CONFIG } from 'src/config-global';
 
 // ----------------------------------------------------------------------
 

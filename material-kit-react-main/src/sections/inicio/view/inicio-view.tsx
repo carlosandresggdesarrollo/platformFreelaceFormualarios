@@ -16,7 +16,6 @@ import { CONFIG } from 'src/config-global';
 import { Iconify } from 'src/components/iconify';
 import { WelcomeModal } from 'src/components/welcome-modal';
 import { LandingFooter } from 'src/components/landing-footer';
-
 import { cacheLoaderPreference } from 'src/components/loading-fallback/loading-fallback';
 
 import { useLandingTheme } from '../themes';

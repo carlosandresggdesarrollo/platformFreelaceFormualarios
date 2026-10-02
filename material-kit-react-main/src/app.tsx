@@ -47,7 +47,6 @@ function SiteTitleSuffix() {
     const timer = setTimeout(apply, 0);
 
     const obs = new MutationObserver(() => {
-      prev.current = '';
       apply();
     });
 

@@ -12,9 +12,9 @@ import { useRouter } from 'src/routes/hooks';
 
 import { useDashboardTheme } from 'src/hooks/use-dashboard-theme';
 
-import { Iconify } from 'src/components/iconify';
-
 import { CONFIG } from 'src/config-global';
+
+import { Iconify } from 'src/components/iconify';
 
 // ----------------------------------------------------------------------
 

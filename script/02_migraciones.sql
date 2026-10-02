@@ -190,6 +190,17 @@ FROM jira_notas_calendario n
 LEFT JOIN usuarios u ON n.idUsuarioCreador = u.idUsuario
 WHERE n.bstate = 1;
 
+-- ----------------------------------------
+-- ACTUALIZAR TABLA usuarios
+-- ----------------------------------------
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS requiereCambioPass TINYINT(1) DEFAULT 0;
+
+-- ----------------------------------------
+-- PARTICIPANTE: columns for linking participants to clients
+-- ----------------------------------------
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS creadoPorCliente INT NULL DEFAULT NULL;
+ALTER TABLE cuestionario_respuestas_sesion ADD COLUMN IF NOT EXISTS idUsuarioParticipante INT NULL DEFAULT NULL;
+
 -- ========================================
 -- FIN DE MIGRACIONES
 -- ========================================

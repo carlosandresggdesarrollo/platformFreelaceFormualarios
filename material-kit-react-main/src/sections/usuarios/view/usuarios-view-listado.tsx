@@ -22,11 +22,11 @@ import { useRouter } from 'src/routes/hooks';
 import { useVistaLista } from 'src/hooks/use-vista-lista';
 import { useDashboardTheme } from 'src/hooks/use-dashboard-theme';
 
+import { CONFIG } from 'src/config-global';
+
 import { Iconify } from 'src/components/iconify';
 import { VistaToggle } from 'src/components/vista-toggle/vista-toggle';
 import { ModuloHeader } from 'src/components/modulo-header/modulo-header';
-
-import { CONFIG } from 'src/config-global';
 
 // ----------------------------------------------------------------------
 

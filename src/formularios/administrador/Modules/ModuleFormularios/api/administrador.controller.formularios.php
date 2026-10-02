@@ -73,6 +73,17 @@ try {
             exit;
         }
 
+        if ($vista === 'respuestas') {
+            $id = intval($_GET['id'] ?? 0);
+            if ($id <= 0) {
+                echo json_encode(['success' => false, 'error' => 'ID requerido']);
+                exit;
+            }
+            $sesiones = $modelo->getRespuestasIndividuales($id, $idUsuario);
+            echo json_encode(['success' => true, 'sesiones' => $sesiones]);
+            exit;
+        }
+
         if ($vista === 'estadisticas_admin') {
             $id = intval($_GET['id'] ?? 0);
             if ($id <= 0) {
@@ -164,6 +175,33 @@ try {
             }
             $modelo->eliminarPregunta($idPregunta);
             echo json_encode(['success' => true]);
+            exit;
+        }
+
+        if ($accion === 'toggle_participante') {
+            $id = intval($input['idCuestionario'] ?? 0);
+            $valor = !empty($input['crearParticipante']);
+            if ($id <= 0) {
+                echo json_encode(['success' => false, 'error' => 'ID requerido']);
+                exit;
+            }
+            $ok = $modelo->actualizarCrearParticipante($id, $valor, $idUsuario);
+            echo json_encode(['success' => $ok]);
+            exit;
+        }
+
+        if ($accion === 'personalizar') {
+            $id = intval($input['idCuestionario'] ?? 0);
+            if ($id <= 0) {
+                echo json_encode(['success' => false, 'error' => 'ID requerido']);
+                exit;
+            }
+            $campos = [];
+            foreach (['tema', 'colorPrimario', 'colorFondo', 'imagenFondo', 'musicaUrl', 'musicaTipo', 'opacidadFondo'] as $k) {
+                if (array_key_exists($k, $input)) $campos[$k] = $input[$k];
+            }
+            $ok = $modelo->actualizarPersonalizacion($id, $campos, $idUsuario);
+            echo json_encode(['success' => $ok]);
             exit;
         }
 

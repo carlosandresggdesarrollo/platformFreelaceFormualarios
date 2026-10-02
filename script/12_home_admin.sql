@@ -7,9 +7,11 @@
 -- Configuracion principal del hero (una sola fila, id=1)
 CREATE TABLE IF NOT EXISTS home_config (
   idConfig INT NOT NULL DEFAULT 1,
-  tituloPrincipal VARCHAR(255) NOT NULL DEFAULT 'BIOTIPOS UNANI',
-  subtitulo VARCHAR(255) NULL DEFAULT 'Conoce tu Temperamento',
+  tituloPrincipal VARCHAR(255) NOT NULL DEFAULT 'Formularios Web',
+  subtitulo VARCHAR(255) NULL DEFAULT 'Crea, comparte y analiza formularios',
   imagenFondo VARCHAR(255) NULL,
+  registroActivo TINYINT(1) NOT NULL DEFAULT 1,
+  nombreSitio VARCHAR(255) DEFAULT 'Formularios Web',
   fechaModificacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (idConfig)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -68,36 +70,35 @@ CREATE TABLE IF NOT EXISTS home_audit_log (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
---  DATOS INICIALES - Biotipos Unani
---  Marco: Rodrigo Garcia Platas y David Duarte
+--  DATOS INICIALES - Formularios Web
 -- ============================================================
 
 -- Config por defecto
 INSERT INTO home_config (idConfig, tituloPrincipal, subtitulo, imagenFondo)
-VALUES (1, 'BIOTIPOS UNANI', 'Conoce tu Temperamento Natural', '/images/imagen10.png')
+VALUES (1, 'Formularios Web', 'Crea, comparte y analiza formularios en tiempo real', NULL)
 ON DUPLICATE KEY UPDATE idConfig = idConfig;
 
 -- Carruseles predefinidos (solo si la tabla esta vacia)
 INSERT INTO home_carruseles (nombre, orden)
-SELECT 'Los Cuatro Biotipos', 1 FROM DUAL
+SELECT 'Funcionalidades', 1 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM home_carruseles LIMIT 1);
 INSERT INTO home_carruseles (nombre, orden)
-SELECT 'Caracteristicas Fisicas y Emocionales', 2 FROM DUAL
-WHERE NOT EXISTS (SELECT 1 FROM home_carruseles WHERE nombre = 'Caracteristicas Fisicas y Emocionales');
+SELECT 'Como Funciona', 2 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM home_carruseles WHERE nombre = 'Como Funciona');
 INSERT INTO home_carruseles (nombre, orden)
-SELECT 'Equilibrio y Bienestar', 3 FROM DUAL
-WHERE NOT EXISTS (SELECT 1 FROM home_carruseles WHERE nombre = 'Equilibrio y Bienestar');
+SELECT 'Beneficios', 3 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM home_carruseles WHERE nombre = 'Beneficios');
 
 -- Nav por defecto (solo si la tabla esta vacia)
 INSERT INTO home_nav (texto, link, orden)
 SELECT 'Inicio', '#inicio', 1 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM home_nav LIMIT 1);
 INSERT INTO home_nav (texto, link, orden)
-SELECT 'Biotipos', '#caracteristicas', 2 FROM DUAL
-WHERE NOT EXISTS (SELECT 1 FROM home_nav WHERE texto = 'Biotipos');
+SELECT 'Funcionalidades', '#caracteristicas', 2 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM home_nav WHERE texto = 'Funcionalidades');
 INSERT INTO home_nav (texto, link, orden)
-SELECT 'Caracteristicas', '#caracteristicas-fisicas', 3 FROM DUAL
-WHERE NOT EXISTS (SELECT 1 FROM home_nav WHERE texto = 'Caracteristicas');
+SELECT 'Como Funciona', '#caracteristicas-fisicas', 3 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM home_nav WHERE texto = 'Como Funciona');
 INSERT INTO home_nav (texto, link, orden)
 SELECT 'Contacto', '#contacto', 4 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM home_nav WHERE texto = 'Contacto');
@@ -110,36 +111,30 @@ CREATE PROCEDURE IF NOT EXISTS _seed_carrusel_items()
 BEGIN
   IF (SELECT COUNT(*) FROM home_carrusel_items) = 0 THEN
     INSERT INTO home_carrusel_items (idCarrusel, icono, titulo, descripcion, orden) VALUES
-    (1, 'mdi:fire', 'Colerico (Bilis Amarilla)',
-     'Elemento Fuego. Temperamento caliente y seco. Segun el marco de Rodrigo Garcia Platas y David Duarte, el colerico es un lider nato con gran determinacion y energia. Posee una voluntad fuerte, toma decisiones rapidas y se orienta a la accion. Es el biotipo que impulsa los proyectos y no teme a los desafios.', 1),
-    (1, 'mdi:weather-windy', 'Sanguineo (Sangre)',
-     'Elemento Aire. Temperamento caliente y humedo. El sanguineo es sociable, optimista y entusiasta por naturaleza. Segun David Duarte, este biotipo se caracteriza por su capacidad de comunicacion, su creatividad y su facilidad para conectar con los demas. Irradia alegria y es el alma de cualquier reunion.', 2),
-    (1, 'mdi:water', 'Flematico (Flema)',
-     'Elemento Agua. Temperamento frio y humedo. El flematico es calmado, paciente y profundamente compasivo. En la vision de Rodrigo Garcia Platas, este biotipo representa la estabilidad emocional y la perseverancia silenciosa. Es leal, confiable y posee una resistencia interior que lo hace inquebrantable.', 3),
-    (1, 'mdi:earth', 'Melancolico (Bilis Negra)',
-     'Elemento Tierra. Temperamento frio y seco. El melancolico es analitico, detallista y profundamente reflexivo. Segun la medicina Unani, este biotipo tiene una sensibilidad artistica unica y una capacidad excepcional para el pensamiento profundo. Es perfeccionista, organizado y busca el sentido en todas las cosas.', 4),
-    (2, 'mdi:fire-circle', 'Fisico del Colerico',
-     'Complexion media a atletica, rasgos angulosos y definidos. Piel calida con tendencia al enrojecimiento. Digestion fuerte y metabolismo acelerado. Mirada penetrante y decidida. Movimientos rapidos y energicos. Propenso a tension muscular y calor corporal elevado.', 1),
-    (2, 'mdi:emoticon-happy-outline', 'Emociones del Sanguineo',
-     'Expresivo y carismatico, cambia de estado de animo con facilidad pero siempre vuelve al optimismo. Disfruta la variedad y las experiencias nuevas. Tiene facilidad para el humor y la risa. Puede dispersarse si no canaliza su energia. Su mayor fortaleza es la capacidad de motivar e inspirar a otros.', 2),
-    (2, 'mdi:heart-pulse', 'Fisico del Flematico',
-     'Complexion robusta con tendencia a acumular peso. Rasgos suaves y redondeados. Piel fresca y humeda con buena hidratacion natural. Metabolismo lento pero constante. Movimientos pausados y fluidos. Excelente resistencia fisica de larga duracion. Necesita actividad para mantener su vitalidad.', 3),
-    (2, 'mdi:brain', 'Mente del Melancolico',
-     'Pensamiento profundo y estructurado. Capacidad excepcional para el analisis y la planificacion. Memoria detallada y precisa. Tendencia a la introspeccion y la creatividad artistica. Puede caer en la sobreanalisis. Su mayor virtud es la capacidad de ver lo que otros pasan por alto y crear obras de gran profundidad.', 4),
-    (2, 'mdi:scale-balance', 'El Equilibrio de los Humores',
-     'Segun David Duarte, todos poseemos los cuatro humores en diferente proporcion. Conocer tu biotipo dominante te permite entender tus fortalezas naturales y las areas donde necesitas mayor atencion. El objetivo no es cambiar tu naturaleza sino armonizarla para alcanzar tu maximo potencial de salud y bienestar.', 5),
-    (3, 'mdi:food-apple-outline', 'Alimentacion por Biotipo',
-     'Cada biotipo requiere alimentos especificos para mantener su equilibrio. El colerico necesita alimentos frescos y amargos. El sanguineo se beneficia de sabores astringentes. El flematico requiere alimentos calientes y especiados. El melancolico necesita alimentos calientes y humedos para contrarrestar su sequedad.', 1),
-    (3, 'mdi:yoga', 'Actividad Fisica Ideal',
-     'El colerico canaliza su energia con deportes intensos y competitivos. El sanguineo disfruta actividades grupales y variadas. El flematico necesita ejercicio regular y estimulante para activar su metabolismo. El melancolico se beneficia de practicas como yoga, caminatas en la naturaleza y ejercicios de estiramiento.', 2),
-    (3, 'mdi:meditation', 'Gestion Emocional',
-     'Segun Rodrigo Garcia Platas, comprender tu biotipo es la clave para manejar tus emociones. El colerico debe aprender a soltar el control. El sanguineo a cultivar la constancia. El flematico a expresar lo que siente. El melancolico a no quedarse atrapado en sus pensamientos. La autoconciencia es el primer paso.', 3),
-    (3, 'mdi:leaf', 'Fitoterapia Unani',
-     'La medicina Unani utiliza plantas medicinales especificas para cada temperamento. Infusiones refrescantes para el colerico, tonificantes para el flematico, equilibrantes para el sanguineo y calentadoras para el melancolico. David Duarte enfatiza que las plantas trabajan en armonia con la constitucion natural de cada persona.', 4),
-    (3, 'mdi:weather-sunny', 'Estilo de Vida y Rutinas',
-     'Cada biotipo florece con rutinas diferentes. El colerico necesita metas claras y retos constantes. El sanguineo necesita variedad y conexion social. El flematico necesita estructura pero sin presion. El melancolico necesita tiempo a solas y espacios de creatividad. Adaptar tu estilo de vida a tu biotipo transforma tu bienestar.', 5),
-    (3, 'mdi:account-group', 'Relaciones Interpersonales',
-     'Conocer los biotipos mejora las relaciones. El colerico lidera pero debe aprender a escuchar. El sanguineo conecta pero debe profundizar. El flematico sostiene pero debe expresarse. El melancolico comprende pero debe abrirse. Cuando entiendes el temperamento del otro, la empatia y la comunicacion fluyen naturalmente.', 6);
+    (1, 'mdi:form-select', 'Crea Formularios',
+     'Disena formularios personalizados con preguntas de opcion multiple y abiertas. Organiza las preguntas con drag and drop, publica cuando estes listo y comparte con un enlace unico.', 1),
+    (1, 'mdi:chart-line', 'Analitica en Tiempo Real',
+     'Visualiza las respuestas a medida que llegan. Graficas de barras, porcentajes por pregunta y tabla de visitantes recientes. Todo se actualiza automaticamente cada pocos segundos.', 2),
+    (1, 'mdi:share-variant', 'Comparte con un Link',
+     'Cada formulario publicado genera un enlace unico con slug amigable para SEO. Comparte por correo, redes sociales o cualquier canal. Sin necesidad de que el respondiente cree una cuenta.', 3),
+    (1, 'mdi:shield-check', 'Roles y Permisos',
+     'Tres roles claros: Administrador supervisa todo, Cliente crea y gestiona sus formularios, Auditor revisa en modo solo lectura. Control total sobre quien puede hacer que.', 4),
+    (2, 'mdi:account-plus', 'Paso 1: Registrate',
+     'Crea tu cuenta como Cliente en segundos. Solo necesitas nombre, email y contrasena. Inmediatamente tendras acceso a tu panel de formularios.', 1),
+    (2, 'mdi:pencil-ruler', 'Paso 2: Disena tu Formulario',
+     'Usa el editor visual para agregar preguntas. Elige entre opcion multiple o preguntas abiertas. Reorganiza el orden con un simple arrastrar y soltar.', 2),
+    (2, 'mdi:send', 'Paso 3: Publica y Comparte',
+     'Cuando tu formulario este listo, publicalo con un clic. Se genera automaticamente un enlace con slug amigable. Copialo y compartelo donde quieras.', 3),
+    (2, 'mdi:chart-bar', 'Paso 4: Analiza Resultados',
+     'Las respuestas llegan en tiempo real a tu panel de estadisticas. Ve totales, porcentajes por opcion y los ultimos visitantes. Toma decisiones basadas en datos.', 4),
+    (3, 'mdi:clock-fast', 'Rapido y Sencillo',
+     'Crea un formulario en minutos, no en horas. La interfaz intuitiva te guia paso a paso. Sin curva de aprendizaje, sin configuraciones complicadas.', 1),
+    (3, 'mdi:eye', 'Monitoreo en Vivo',
+     'No esperes a que termine la encuesta. Ve las respuestas llegando en tiempo real. Ideal para eventos, clases o cualquier situacion donde necesites feedback inmediato.', 2),
+    (3, 'mdi:link-variant', 'URLs Amigables',
+     'Tus formularios tienen URLs limpias y legibles. En lugar de codigos crípticos, tus enlaces incluyen el titulo del formulario para que los respondientes sepan que esperar.', 3),
+    (3, 'mdi:cellphone-link', 'Responsive',
+     'Tus formularios se ven perfectos en cualquier dispositivo. Los respondientes pueden contestar desde su celular, tablet o computadora sin problemas.', 4);
   END IF;
 END //
 DELIMITER ;

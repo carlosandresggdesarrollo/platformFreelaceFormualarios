@@ -37,8 +37,6 @@ const keyframes = `
   @keyframes bounceIn { 0%{opacity:0;transform:scale(0.3)} 50%{transform:scale(1.05)} 70%{transform:scale(0.9)} 100%{opacity:1;transform:scale(1)} }
   @keyframes scaleIn { 0%{opacity:0;transform:scale(0.8)} 100%{opacity:1;transform:scale(1)} }
   @keyframes slideUp { 0%{opacity:0;transform:translateY(60px)} 100%{opacity:1;transform:translateY(0)} }
-  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-20px)} }
-  @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 var(--landing-accent-pulse,rgba(0,0,0,0.2))} 50%{box-shadow:0 0 20px 5px var(--landing-accent-pulse-soft,rgba(0,0,0,0.1))} }
 `;
 
 const cleanImageUrl = (url: string | undefined): string | undefined => {
@@ -263,19 +261,16 @@ export function SignInView() {
           position: 'absolute', top: '-15%', right: '-10%',
           width: { xs: 300, md: 500 }, height: { xs: 300, md: 500 },
           borderRadius: '50%', bgcolor: 'var(--landing-circle1)',
-          animation: 'float 20s ease-in-out infinite',
         }} />
         <Box sx={{
           position: 'absolute', bottom: '-10%', left: '-8%',
           width: { xs: 250, md: 400 }, height: { xs: 250, md: 400 },
           borderRadius: '50%', bgcolor: 'var(--landing-circle2)',
-          animation: 'float 25s ease-in-out infinite', animationDelay: '3s',
         }} />
         <Box sx={{
           position: 'absolute', top: '50%', left: '65%',
           width: 150, height: 150,
           borderRadius: '50%', bgcolor: 'var(--landing-circle1)', opacity: 0.5,
-          animation: 'float 18s ease-in-out infinite', animationDelay: '6s',
           display: { xs: 'none', md: 'block' },
         }} />
       </Box>
@@ -285,7 +280,7 @@ export function SignInView() {
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000,
         py: { xs: 1.5, md: 2 }, px: { xs: 2, sm: 4, md: 6 },
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        bgcolor: 'var(--landing-navbar-bg)', backdropFilter: 'blur(10px)',
+        bgcolor: 'var(--landing-navbar-bg)',
         boxShadow: 'var(--landing-navbar-shadow)',
         animation: isLoaded ? 'fadeInDown 0.8s ease-out forwards' : 'none',
         opacity: isLoaded ? 1 : 0,
@@ -362,7 +357,7 @@ export function SignInView() {
                 width: 80, height: 80, borderRadius: '50%', bgcolor: 'var(--landing-icon-bg)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 mx: 'auto', mb: 3,
-                animation: isLoaded ? 'bounceIn 0.6s ease-out forwards, pulse 3s ease-in-out 1.5s infinite' : 'none',
+                animation: isLoaded ? 'bounceIn 0.6s ease-out forwards' : 'none',
                 transition: 'all 0.3s ease',
                 '&:hover': { transform: 'scale(1.05)' },
               }}>

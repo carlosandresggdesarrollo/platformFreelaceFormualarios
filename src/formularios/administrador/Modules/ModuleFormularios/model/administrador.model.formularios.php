@@ -57,6 +57,109 @@ class FormulariosModel extends Conection
     }
 
     // ================================================================
+    //  FILE UPLOADS
+    // ================================================================
+
+    private $formUploadDir;
+    private $formUploadUrl = '/uploads/formularios/';
+    private $allowedImageExts = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+    private $allowedAudioExts = ['mp3', 'ogg', 'wav'];
+    private $maxImageSize = 5242880;  // 5 MB
+    private $maxAudioSize = 15728640; // 15 MB
+
+    private function initUploadDir(): void
+    {
+        if ($this->formUploadDir) return;
+        $root = isset($_SERVER['DOCUMENT_ROOT']) && $_SERVER['DOCUMENT_ROOT'] !== ''
+            ? $_SERVER['DOCUMENT_ROOT']
+            : '/var/www/html';
+        $this->formUploadDir = $root . '/uploads/formularios/';
+        if (!is_dir($this->formUploadDir)) {
+            @mkdir($this->formUploadDir, 0775, true);
+        }
+    }
+
+    public function uploadFormFile(array $file, string $tipo): array
+    {
+        $this->initUploadDir();
+
+        if (!isset($file['tmp_name']) || $file['error'] !== UPLOAD_ERR_OK) {
+            return ['success' => false, 'error' => 'Error al recibir el archivo'];
+        }
+
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mime = $finfo->file($file['tmp_name']);
+
+        if ($tipo === 'imagen') {
+            if ($file['size'] > $this->maxImageSize) {
+                return ['success' => false, 'error' => 'La imagen excede 5 MB'];
+            }
+            if (!in_array($ext, $this->allowedImageExts, true)) {
+                return ['success' => false, 'error' => 'Extension no permitida. Usa: ' . implode(', ', $this->allowedImageExts)];
+            }
+            $allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+            if (!in_array($mime, $allowedMimes, true)) {
+                return ['success' => false, 'error' => 'Tipo MIME no valido: ' . $mime];
+            }
+        } elseif ($tipo === 'audio') {
+            if ($file['size'] > $this->maxAudioSize) {
+                return ['success' => false, 'error' => 'El audio excede 15 MB'];
+            }
+            if (!in_array($ext, $this->allowedAudioExts, true)) {
+                return ['success' => false, 'error' => 'Extension no permitida. Usa: ' . implode(', ', $this->allowedAudioExts)];
+            }
+            $allowedMimes = ['audio/mpeg', 'audio/ogg', 'audio/wav', 'audio/mp3', 'application/octet-stream'];
+            if (!in_array($mime, $allowedMimes, true)) {
+                return ['success' => false, 'error' => 'Tipo MIME no valido: ' . $mime];
+            }
+        } else {
+            return ['success' => false, 'error' => 'Tipo de archivo no soportado'];
+        }
+
+        $nombreArchivo = 'form_' . $tipo . '_' . date('YmdHis') . '_' . mt_rand(1000, 9999) . '.' . $ext;
+        $destino = $this->formUploadDir . $nombreArchivo;
+
+        if (!move_uploaded_file($file['tmp_name'], $destino)) {
+            return ['success' => false, 'error' => 'No se pudo guardar el archivo'];
+        }
+
+        return ['success' => true, 'path' => $this->formUploadUrl . $nombreArchivo, 'type' => $tipo];
+    }
+
+    // ================================================================
+    //  PERSONALIZATION
+    // ================================================================
+
+    public function actualizarPersonalizacion(int $id, array $campos, int $idUsuario): bool
+    {
+        $this->open();
+        $r = mysqli_query($this->Connection,
+            "SELECT idCuestionario FROM cuestionarios WHERE idCuestionario=$id AND creadoPor=$idUsuario");
+        if (!$r || $r->num_rows === 0) { $this->closet(); return false; }
+
+        $sets = [];
+        $allowed = ['tema', 'colorPrimario', 'colorFondo', 'imagenFondo', 'musicaUrl', 'musicaTipo', 'opacidadFondo'];
+        foreach ($allowed as $col) {
+            if (!array_key_exists($col, $campos)) continue;
+            $val = $campos[$col];
+            if ($val === null || $val === '') {
+                $sets[] = "$col = NULL";
+            } elseif ($col === 'opacidadFondo') {
+                $sets[] = "$col = " . intval($val);
+            } else {
+                $sets[] = "$col = '" . mysqli_real_escape_string($this->Connection, $val) . "'";
+            }
+        }
+        if (empty($sets)) { $this->closet(); return true; }
+
+        mysqli_query($this->Connection,
+            "UPDATE cuestionarios SET " . implode(', ', $sets) . " WHERE idCuestionario=$id AND creadoPor=$idUsuario");
+        $this->closet();
+        return true;
+    }
+
+    // ================================================================
     //  FORMULARIOS CRUD (scoped by owner)
     // ================================================================
 
@@ -65,7 +168,9 @@ class FormulariosModel extends Conection
         $this->open();
         $result = [];
         $r = mysqli_query($this->Connection,
-            "SELECT c.idCuestionario, c.titulo, c.descripcion, c.estado, c.compartirToken, c.slug, c.fechaCreacion,
+            "SELECT c.idCuestionario, c.titulo, c.descripcion, c.estado, c.compartirToken, c.slug,
+                    c.tema, c.colorPrimario, c.colorFondo, c.imagenFondo, c.musicaUrl, c.musicaTipo, c.opacidadFondo,
+                    c.crearParticipante, c.fechaCreacion,
                     (SELECT COUNT(*) FROM cuestionario_preguntas WHERE idCuestionario = c.idCuestionario) as totalPreguntas,
                     (SELECT COUNT(*) FROM cuestionario_respuestas_sesion WHERE idCuestionario = c.idCuestionario) as totalRespuestas,
                     (SELECT COUNT(*) FROM formulario_visitas WHERE idCuestionario = c.idCuestionario) as totalVisitas
@@ -93,17 +198,101 @@ class FormulariosModel extends Conection
         return ['idCuestionario' => $id, 'compartirToken' => $token, 'slug' => $slug];
     }
 
+    public function crearFormularioCompleto(array $form, int $idUsuario): array
+    {
+        $this->open();
+        $titulo = mysqli_real_escape_string($this->Connection, $form['titulo'] ?? 'Sin titulo');
+        $desc   = mysqli_real_escape_string($this->Connection, $form['descripcion'] ?? '');
+        $token  = $this->generarToken();
+        $slug   = mysqli_real_escape_string($this->Connection, $this->generarSlug($form['titulo'] ?? 'sin-titulo'));
+
+        $r = mysqli_query($this->Connection,
+            "INSERT INTO cuestionarios (titulo, descripcion, estado, compartirToken, slug, creadoPor)
+             VALUES ('$titulo', '$desc', 'borrador', '$token', '$slug', $idUsuario)");
+        $idCuestionario = $r ? mysqli_insert_id($this->Connection) : 0;
+
+        if ($idCuestionario <= 0) {
+            $this->closet();
+            return ['success' => false, 'error' => 'No se pudo crear el formulario'];
+        }
+
+        $preguntas = $form['preguntas'] ?? [];
+        foreach ($preguntas as $i => $preg) {
+            $textoPregunta = mysqli_real_escape_string($this->Connection, $preg['textoPregunta'] ?? '');
+            $orden = $i + 1;
+            mysqli_query($this->Connection,
+                "INSERT INTO cuestionario_preguntas (idCuestionario, textoPregunta, orden)
+                 VALUES ($idCuestionario, '$textoPregunta', $orden)");
+            $idPregunta = mysqli_insert_id($this->Connection);
+
+            $opciones = $preg['opciones'] ?? [];
+            foreach ($opciones as $j => $opc) {
+                $textoOpc  = mysqli_real_escape_string($this->Connection, $opc['texto'] ?? '');
+                $correcta  = !empty($opc['esCorrecta']) ? 1 : 0;
+                mysqli_query($this->Connection,
+                    "INSERT INTO cuestionario_opciones (idPregunta, textoOpcion, esCorrecta, orden)
+                     VALUES ($idPregunta, '$textoOpc', $correcta, $j)");
+            }
+        }
+
+        $sets = [];
+        if (!empty($form['tema'])) {
+            $v = mysqli_real_escape_string($this->Connection, $form['tema']);
+            $sets[] = "tema='$v'";
+        }
+        if (!empty($form['colorPrimario'])) {
+            $v = mysqli_real_escape_string($this->Connection, $form['colorPrimario']);
+            $sets[] = "colorPrimario='$v'";
+        }
+        if (!empty($form['colorFondo'])) {
+            $v = mysqli_real_escape_string($this->Connection, $form['colorFondo']);
+            $sets[] = "colorFondo='$v'";
+        }
+        if (!empty($form['imagenFondo'])) {
+            $v = mysqli_real_escape_string($this->Connection, $form['imagenFondo']);
+            $sets[] = "imagenFondo='$v'";
+        }
+        if (!empty($form['musicaUrl'])) {
+            $v = mysqli_real_escape_string($this->Connection, $form['musicaUrl']);
+            $sets[] = "musicaUrl='$v'";
+        }
+        if (!empty($form['musicaTipo'])) {
+            $v = mysqli_real_escape_string($this->Connection, $form['musicaTipo']);
+            $sets[] = "musicaTipo='$v'";
+        }
+        if (isset($form['opacidadFondo'])) {
+            $v = intval($form['opacidadFondo']);
+            $sets[] = "opacidadFondo=$v";
+        }
+
+        if (!empty($sets)) {
+            $setStr = implode(', ', $sets);
+            mysqli_query($this->Connection,
+                "UPDATE cuestionarios SET $setStr WHERE idCuestionario=$idCuestionario");
+        }
+
+        $this->closet();
+        return [
+            'success' => true,
+            'idCuestionario' => $idCuestionario,
+            'compartirToken' => $token,
+            'slug' => $slug,
+        ];
+    }
+
     public function getFormulario(int $id, int $idUsuario): ?array
     {
         $this->open();
         $r = mysqli_query($this->Connection,
-            "SELECT idCuestionario, titulo, descripcion, estado, compartirToken, slug, fechaCreacion
+            "SELECT idCuestionario, titulo, descripcion, estado, compartirToken, slug,
+                    tema, colorPrimario, colorFondo, imagenFondo, musicaUrl, musicaTipo, opacidadFondo,
+                    crearParticipante, fechaCreacion
              FROM cuestionarios WHERE idCuestionario = $id AND creadoPor = $idUsuario");
         if (!$r || $r->num_rows === 0) { $this->closet(); return null; }
         $form = $r->fetch_assoc();
 
         $r = mysqli_query($this->Connection,
-            "SELECT p.idPregunta, p.textoPregunta, p.orden, p.tipo
+            "SELECT p.idPregunta, p.textoPregunta, p.orden
              FROM cuestionario_preguntas p
              WHERE p.idCuestionario = $id ORDER BY p.orden ASC");
         $form['preguntas'] = [];
@@ -213,7 +402,8 @@ class FormulariosModel extends Conection
         $this->open();
         $token = mysqli_real_escape_string($this->Connection, $token);
         $r = mysqli_query($this->Connection,
-            "SELECT idCuestionario, titulo, descripcion, estado, compartirToken, slug
+            "SELECT idCuestionario, titulo, descripcion, estado, compartirToken, slug,
+                    tema, colorPrimario, colorFondo, imagenFondo, musicaUrl, musicaTipo, opacidadFondo
              FROM cuestionarios WHERE compartirToken='$token' AND estado='publicado'");
         if (!$r || $r->num_rows === 0) { $this->closet(); return null; }
         $form = $r->fetch_assoc();
@@ -238,15 +428,20 @@ class FormulariosModel extends Conection
         return $form;
     }
 
-    public function guardarRespuestas(int $idCuestionario, ?string $nombre, ?string $email, array $respuestas): array
+    public function guardarRespuestas(int $idCuestionario, ?string $nombre, ?string $email, array $respuestas, array $demograficos = []): array
     {
         $this->open();
         $nom = $nombre ? "'" . mysqli_real_escape_string($this->Connection, $nombre) . "'" : 'NULL';
         $ema = $email ? "'" . mysqli_real_escape_string($this->Connection, $email) . "'" : 'NULL';
+        $sexo = !empty($demograficos['sexo']) ? "'" . mysqli_real_escape_string($this->Connection, $demograficos['sexo']) . "'" : 'NULL';
+        $edad = !empty($demograficos['edad']) ? intval($demograficos['edad']) : 'NULL';
+        $idPais = !empty($demograficos['idPais']) ? intval($demograficos['idPais']) : 'NULL';
+        $idEstado = !empty($demograficos['idEstado']) ? intval($demograficos['idEstado']) : 'NULL';
+        $idMunicipio = !empty($demograficos['idMunicipio']) ? intval($demograficos['idMunicipio']) : 'NULL';
 
         mysqli_query($this->Connection,
-            "INSERT INTO cuestionario_respuestas_sesion (idCuestionario, nombreParticipante, emailParticipante, fechaFin)
-             VALUES ($idCuestionario, $nom, $ema, NOW())");
+            "INSERT INTO cuestionario_respuestas_sesion (idCuestionario, nombreParticipante, emailParticipante, sexo, edad, idPais, idEstado, idMunicipio, fechaFin)
+             VALUES ($idCuestionario, $nom, $ema, $sexo, $edad, $idPais, $idEstado, $idMunicipio, NOW())");
         $idSesion = mysqli_insert_id($this->Connection);
 
         $correctas = 0;
@@ -263,8 +458,47 @@ class FormulariosModel extends Conection
                 if (intval($row['esCorrecta']) === 1) $correctas++;
             }
         }
+
+        $this->crearParticipanteSiAplica($idCuestionario, $idSesion, $nombre, $email);
+
         $this->closet();
         return ['idSesion' => $idSesion, 'correctas' => $correctas, 'total' => $totalPreguntas];
+    }
+
+    private function crearParticipanteSiAplica(int $idCuestionario, int $idSesion, ?string $nombre, ?string $email): void
+    {
+        if (!$email) return;
+
+        $r = mysqli_query($this->Connection,
+            "SELECT crearParticipante, creadoPor FROM cuestionarios WHERE idCuestionario=$idCuestionario");
+        if (!$r) return;
+        $form = $r->fetch_assoc();
+        if (!$form || intval($form['crearParticipante']) !== 1) return;
+
+        $idCliente = intval($form['creadoPor']);
+        $emailEsc = mysqli_real_escape_string($this->Connection, $email);
+
+        $exists = mysqli_query($this->Connection,
+            "SELECT idUsuario FROM usuarios WHERE email='$emailEsc' AND tipoUsuario='PARTICIPANTE' AND creadoPorCliente=$idCliente AND bstate=1");
+        if ($exists && $exists->num_rows > 0) {
+            $row = $exists->fetch_assoc();
+            $idUsuario = intval($row['idUsuario']);
+        } else {
+            $nomEsc = mysqli_real_escape_string($this->Connection, $nombre ?? '');
+            $usuario = mysqli_real_escape_string($this->Connection, substr($email, 0, 50));
+            $hash = password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT);
+            $date = date('Y-m-d H:i:s');
+
+            mysqli_query($this->Connection,
+                "INSERT INTO usuarios (usuario, nombre, apellidos, contrasena, email, profesion, tipoUsuario, imagen, estatus, contraro, token, fechaCreacion, fechaModificacion, observacion, bstate, creadoPorCliente)
+                 VALUES ('$usuario', '$nomEsc', '', '$hash', '$emailEsc', '', 'PARTICIPANTE', '/administrador/Modules/ModulesImage/usuarios.png', 'ACTIVO', '', '', '$date', '$date', 'Creado al responder formulario $idCuestionario', 1, $idCliente)");
+            $idUsuario = mysqli_insert_id($this->Connection);
+        }
+
+        if ($idUsuario > 0) {
+            mysqli_query($this->Connection,
+                "UPDATE cuestionario_respuestas_sesion SET idUsuarioParticipante=$idUsuario WHERE idSesion=$idSesion");
+        }
     }
 
     // ================================================================
@@ -428,6 +662,65 @@ class FormulariosModel extends Conection
     }
 
     // ================================================================
+    //  INDIVIDUAL RESPONSES (for reports)
+    // ================================================================
+
+    public function getRespuestasIndividuales(int $idCuestionario, int $idUsuario): array
+    {
+        $this->open();
+        $r = mysqli_query($this->Connection,
+            "SELECT idCuestionario FROM cuestionarios WHERE idCuestionario=$idCuestionario AND creadoPor=$idUsuario");
+        if (!$r || $r->num_rows === 0) { $this->closet(); return []; }
+
+        $r = mysqli_query($this->Connection,
+            "SELECT s.idSesion, s.nombreParticipante, s.emailParticipante, s.fechaInicio, s.fechaFin,
+                    s.sexo, s.edad, s.idPais, s.idEstado, s.idMunicipio,
+                    cp.nombre as paisNombre, ce.nombre as estadoNombre, cm.nombre as municipioNombre,
+                    p.idPregunta, p.textoPregunta, p.orden,
+                    o.textoOpcion, o.esCorrecta
+             FROM cuestionario_respuestas_sesion s
+             JOIN cuestionario_respuestas r ON r.idSesion = s.idSesion
+             JOIN cuestionario_preguntas p ON p.idPregunta = r.idPregunta
+             LEFT JOIN cuestionario_opciones o ON o.idOpcion = r.idOpcion
+             LEFT JOIN cat_paises cp ON cp.idPais = s.idPais
+             LEFT JOIN cat_estados ce ON ce.idEstado = s.idEstado
+             LEFT JOIN cat_municipios cm ON cm.idMunicipio = s.idMunicipio
+             WHERE s.idCuestionario = $idCuestionario
+             ORDER BY s.idSesion DESC, p.orden ASC");
+
+        $sesiones = [];
+        if ($r) {
+            while ($row = $r->fetch_assoc()) {
+                $sid = intval($row['idSesion']);
+                if (!isset($sesiones[$sid])) {
+                    $sesiones[$sid] = [
+                        'idSesion' => $sid,
+                        'nombreParticipante' => $row['nombreParticipante'],
+                        'emailParticipante' => $row['emailParticipante'],
+                        'sexo' => $row['sexo'],
+                        'edad' => $row['edad'] ? intval($row['edad']) : null,
+                        'pais' => $row['paisNombre'],
+                        'estado' => $row['estadoNombre'],
+                        'municipio' => $row['municipioNombre'],
+                        'fechaInicio' => $row['fechaInicio'],
+                        'fechaFin' => $row['fechaFin'],
+                        'respuestas' => [],
+                    ];
+                }
+                $sesiones[$sid]['respuestas'][] = [
+                    'idPregunta' => intval($row['idPregunta']),
+                    'textoPregunta' => $row['textoPregunta'],
+                    'orden' => intval($row['orden']),
+                    'textoOpcion' => $row['textoOpcion'],
+                    'esCorrecta' => $row['esCorrecta'],
+                ];
+            }
+        }
+        $this->closet();
+        return array_values($sesiones);
+    }
+
+    // ================================================================
     //  ADMIN — ALL FORMS FROM ALL CLIENTS
     // ================================================================
 
@@ -494,5 +787,54 @@ class FormulariosModel extends Conection
 
         $this->closet();
         return $form;
+    }
+
+    // ================================================================
+    //  CATALOGS (public)
+    // ================================================================
+
+    public function getPaises(): array
+    {
+        $this->open();
+        $result = [];
+        $r = mysqli_query($this->Connection, "SELECT idPais, nombre FROM cat_paises WHERE bstate=1 ORDER BY nombre");
+        if ($r) { while ($row = $r->fetch_assoc()) $result[] = $row; }
+        $this->closet();
+        return $result;
+    }
+
+    public function getEstados(int $idPais): array
+    {
+        $this->open();
+        $result = [];
+        $r = mysqli_query($this->Connection, "SELECT idEstado, nombre FROM cat_estados WHERE idPais=$idPais AND bstate=1 ORDER BY nombre");
+        if ($r) { while ($row = $r->fetch_assoc()) $result[] = $row; }
+        $this->closet();
+        return $result;
+    }
+
+    public function getMunicipios(int $idEstado): array
+    {
+        $this->open();
+        $result = [];
+        $r = mysqli_query($this->Connection, "SELECT idMunicipio, nombre FROM cat_municipios WHERE idEstado=$idEstado AND bstate=1 ORDER BY nombre");
+        if ($r) { while ($row = $r->fetch_assoc()) $result[] = $row; }
+        $this->closet();
+        return $result;
+    }
+
+    // ================================================================
+    //  CREAR PARTICIPANTE TOGGLE
+    // ================================================================
+
+    public function actualizarCrearParticipante(int $idCuestionario, bool $valor, int $idUsuario): bool
+    {
+        $this->open();
+        $v = $valor ? 1 : 0;
+        $r = mysqli_query($this->Connection,
+            "UPDATE cuestionarios SET crearParticipante=$v WHERE idCuestionario=$idCuestionario AND creadoPor=$idUsuario");
+        $ok = $r && mysqli_affected_rows($this->Connection) >= 0;
+        $this->closet();
+        return $ok;
     }
 }

@@ -18,9 +18,28 @@ try {
     $metodo = $_SERVER['REQUEST_METHOD'];
 
     // ================================================================
-    //  GET — Load form by token
+    //  GET — Load form by token, or catalogs
     // ================================================================
     if ($metodo === 'GET') {
+        $vista = $_GET['vista'] ?? '';
+
+        if ($vista === 'paises') {
+            echo json_encode(['success' => true, 'paises' => $modelo->getPaises()]);
+            exit;
+        }
+        if ($vista === 'estados') {
+            $idPais = intval($_GET['idPais'] ?? 0);
+            if ($idPais <= 0) { echo json_encode(['success' => false, 'error' => 'idPais requerido']); exit; }
+            echo json_encode(['success' => true, 'estados' => $modelo->getEstados($idPais)]);
+            exit;
+        }
+        if ($vista === 'municipios') {
+            $idEstado = intval($_GET['idEstado'] ?? 0);
+            if ($idEstado <= 0) { echo json_encode(['success' => false, 'error' => 'idEstado requerido']); exit; }
+            echo json_encode(['success' => true, 'municipios' => $modelo->getMunicipios($idEstado)]);
+            exit;
+        }
+
         $token = $_GET['token'] ?? '';
         if (empty($token)) {
             echo json_encode(['success' => false, 'error' => 'Token requerido']);
@@ -62,11 +81,18 @@ try {
             $nombre = $input['nombre'] ?? null;
             $email = $input['email'] ?? null;
             $respuestas = $input['respuestas'] ?? [];
+            $demograficos = [
+                'sexo' => $input['sexo'] ?? null,
+                'edad' => $input['edad'] ?? null,
+                'idPais' => $input['idPais'] ?? null,
+                'idEstado' => $input['idEstado'] ?? null,
+                'idMunicipio' => $input['idMunicipio'] ?? null,
+            ];
             if ($idCuestionario <= 0 || empty($respuestas)) {
                 echo json_encode(['success' => false, 'error' => 'Datos incompletos']);
                 exit;
             }
-            $result = $modelo->guardarRespuestas($idCuestionario, $nombre, $email, $respuestas);
+            $result = $modelo->guardarRespuestas($idCuestionario, $nombre, $email, $respuestas, $demograficos);
             echo json_encode(['success' => true, 'resultado' => $result]);
             exit;
         }

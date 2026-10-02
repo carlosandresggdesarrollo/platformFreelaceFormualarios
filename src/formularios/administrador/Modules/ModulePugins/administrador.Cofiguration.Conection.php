@@ -15,13 +15,13 @@ namespace  administrador\Modules\ModulePugins\Conection;
         protected $Server   = 'mysql_platform';
         protected $User     = 'root';
         protected $Password = 'Kb.204.h3';
-        protected $Database = 'biotiposUnani';
+        protected $Database = 'formularios';
 
         /* Para localhost sin Docker:
         protected $Server   = '127.0.0.1';
         protected $User     = 'root';
         protected $Password = 'Kb.204.h3';
-        protected $Database = 'biotiposUnani'; */
+        protected $Database = 'formularios'; */
 
         
         public $Connection;

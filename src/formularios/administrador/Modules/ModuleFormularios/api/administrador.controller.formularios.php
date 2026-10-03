@@ -84,6 +84,21 @@ try {
             exit;
         }
 
+        if ($vista === 'analitica') {
+            $id = intval($_GET['id'] ?? 0);
+            if ($id <= 0) {
+                echo json_encode(['success' => false, 'error' => 'ID requerido']);
+                exit;
+            }
+            $data = $modelo->getAnaliticaFormulario($id, $idUsuario);
+            if (!$data) {
+                echo json_encode(['success' => false, 'error' => 'Formulario no encontrado']);
+                exit;
+            }
+            echo json_encode(['success' => true, 'data' => $data]);
+            exit;
+        }
+
         if ($vista === 'estadisticas_admin') {
             $id = intval($_GET['id'] ?? 0);
             if ($id <= 0) {

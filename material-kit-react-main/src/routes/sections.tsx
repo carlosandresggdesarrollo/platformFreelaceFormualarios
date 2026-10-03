@@ -88,6 +88,7 @@ export const AuditorDashboardPage         = lazy(() => import('src/pages/auditor
 export const FormulariosListadoPage       = lazy(() => import('src/pages/formularios/listado'));
 export const FormulariosEditorPage        = lazy(() => import('src/pages/formularios/editor'));
 export const FormulariosStatsPage         = lazy(() => import('src/pages/formularios/stats'));
+export const FormulariosAnalyticsPage     = lazy(() => import('src/pages/formularios/analytics'));
 
 // ----------------------------------------------------------------------
 // FORMULARIOS (ADMIN - supervision)
@@ -181,6 +182,7 @@ export const routesSection: RouteObject[] = [
       { path: 'formularios', element: <FormulariosListadoPage /> },
       { path: 'formularios/editar/:id', element: <FormulariosEditorPage /> },
       { path: 'formularios/stats/:id', element: <FormulariosStatsPage /> },
+      { path: 'formularios/analytics/:id', element: <FormulariosAnalyticsPage /> },
 
       // AUDITOR
       { path: 'auditor/dashboard', element: <AuditorDashboardPage /> },

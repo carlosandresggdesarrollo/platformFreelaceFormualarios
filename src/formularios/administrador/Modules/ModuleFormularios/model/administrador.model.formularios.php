@@ -790,6 +790,150 @@ class FormulariosModel extends Conection
     }
 
     // ================================================================
+    //  ANALYTICS — full data for charts
+    // ================================================================
+
+    public function getAnaliticaFormulario(int $idCuestionario, int $idUsuario): ?array
+    {
+        $this->open();
+
+        $r = mysqli_query($this->Connection,
+            "SELECT idCuestionario, titulo, descripcion, estado, compartirToken, slug, fechaCreacion
+             FROM cuestionarios WHERE idCuestionario=$idCuestionario AND creadoPor=$idUsuario");
+        if (!$r || $r->num_rows === 0) { $this->closet(); return null; }
+        $form = $r->fetch_assoc();
+
+        // 1. Per-question option distribution (pie/bar)
+        $r = mysqli_query($this->Connection,
+            "SELECT idPregunta, textoPregunta, orden FROM cuestionario_preguntas WHERE idCuestionario=$idCuestionario ORDER BY orden");
+        $form['preguntas'] = [];
+        if ($r) {
+            while ($p = $r->fetch_assoc()) {
+                $idP = intval($p['idPregunta']);
+                $rOpc = mysqli_query($this->Connection,
+                    "SELECT o.idOpcion, o.textoOpcion, o.esCorrecta,
+                            (SELECT COUNT(*) FROM cuestionario_respuestas WHERE idOpcion = o.idOpcion) as selecciones
+                     FROM cuestionario_opciones o WHERE o.idPregunta=$idP ORDER BY o.orden");
+                $p['opciones'] = [];
+                if ($rOpc) { while ($opc = $rOpc->fetch_assoc()) $p['opciones'][] = $opc; }
+                $form['preguntas'][] = $p;
+            }
+        }
+
+        // 2. Total responses
+        $r = mysqli_query($this->Connection,
+            "SELECT COUNT(*) as total FROM cuestionario_respuestas_sesion WHERE idCuestionario=$idCuestionario");
+        $form['totalRespuestas'] = $r ? intval($r->fetch_assoc()['total']) : 0;
+
+        // 3. Demographics — sexo
+        $r = mysqli_query($this->Connection,
+            "SELECT IFNULL(sexo,'Sin especificar') as sexo, COUNT(*) as total
+             FROM cuestionario_respuestas_sesion WHERE idCuestionario=$idCuestionario GROUP BY sexo ORDER BY total DESC");
+        $form['demografiaSexo'] = [];
+        if ($r) { while ($row = $r->fetch_assoc()) $form['demografiaSexo'][] = $row; }
+
+        // 4. Demographics — edad ranges
+        $r = mysqli_query($this->Connection,
+            "SELECT
+                CASE
+                    WHEN edad IS NULL THEN 'Sin especificar'
+                    WHEN edad < 18 THEN 'Menor de 18'
+                    WHEN edad BETWEEN 18 AND 24 THEN '18-24'
+                    WHEN edad BETWEEN 25 AND 34 THEN '25-34'
+                    WHEN edad BETWEEN 35 AND 44 THEN '35-44'
+                    WHEN edad BETWEEN 45 AND 54 THEN '45-54'
+                    ELSE '55+'
+                END as rango, COUNT(*) as total
+             FROM cuestionario_respuestas_sesion WHERE idCuestionario=$idCuestionario GROUP BY rango ORDER BY
+                CASE rango
+                    WHEN 'Menor de 18' THEN 1 WHEN '18-24' THEN 2 WHEN '25-34' THEN 3
+                    WHEN '35-44' THEN 4 WHEN '45-54' THEN 5 WHEN '55+' THEN 6 ELSE 7
+                END");
+        $form['demografiaEdad'] = [];
+        if ($r) { while ($row = $r->fetch_assoc()) $form['demografiaEdad'][] = $row; }
+
+        // 5. Demographics — geography (top states)
+        $r = mysqli_query($this->Connection,
+            "SELECT IFNULL(ce.nombre,'Sin especificar') as estado, COUNT(*) as total
+             FROM cuestionario_respuestas_sesion s
+             LEFT JOIN cat_estados ce ON ce.idEstado = s.idEstado
+             WHERE s.idCuestionario=$idCuestionario GROUP BY estado ORDER BY total DESC LIMIT 10");
+        $form['demografiaGeografia'] = [];
+        if ($r) { while ($row = $r->fetch_assoc()) $form['demografiaGeografia'][] = $row; }
+
+        // 6. Temporal — responses per day (last 90 days)
+        $r = mysqli_query($this->Connection,
+            "SELECT DATE(fechaInicio) as fecha, COUNT(*) as total
+             FROM cuestionario_respuestas_sesion
+             WHERE idCuestionario=$idCuestionario AND fechaInicio >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
+             GROUP BY DATE(fechaInicio) ORDER BY fecha");
+        $form['temporalRespuestas'] = [];
+        if ($r) { while ($row = $r->fetch_assoc()) $form['temporalRespuestas'][] = $row; }
+
+        // 7. Temporal — visits per day (last 90 days)
+        $r = mysqli_query($this->Connection,
+            "SELECT DATE(fechaVisita) as fecha, COUNT(*) as total
+             FROM formulario_visitas
+             WHERE idCuestionario=$idCuestionario AND fechaVisita >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
+             GROUP BY DATE(fechaVisita) ORDER BY fecha");
+        $form['temporalVisitas'] = [];
+        if ($r) { while ($row = $r->fetch_assoc()) $form['temporalVisitas'][] = $row; }
+
+        // 8. Device breakdown
+        $r = mysqli_query($this->Connection,
+            "SELECT dispositivo, COUNT(*) as total FROM formulario_visitas WHERE idCuestionario=$idCuestionario GROUP BY dispositivo ORDER BY total DESC");
+        $form['dispositivos'] = [];
+        if ($r) { while ($row = $r->fetch_assoc()) $form['dispositivos'][] = $row; }
+
+        // 9. Browser breakdown
+        $r = mysqli_query($this->Connection,
+            "SELECT navegador, COUNT(*) as total FROM formulario_visitas WHERE idCuestionario=$idCuestionario GROUP BY navegador ORDER BY total DESC");
+        $form['navegadores'] = [];
+        if ($r) { while ($row = $r->fetch_assoc()) $form['navegadores'][] = $row; }
+
+        // 10. OS breakdown
+        $r = mysqli_query($this->Connection,
+            "SELECT sistemaOperativo, COUNT(*) as total FROM formulario_visitas WHERE idCuestionario=$idCuestionario GROUP BY sistemaOperativo ORDER BY total DESC");
+        $form['sistemasOperativos'] = [];
+        if ($r) { while ($row = $r->fetch_assoc()) $form['sistemasOperativos'][] = $row; }
+
+        // 11. Funnel: total visits, unique visitors, total responses
+        $r = mysqli_query($this->Connection,
+            "SELECT COUNT(*) as totalVisitas, COUNT(DISTINCT ip) as visitasUnicas, AVG(duracionSegundos) as promDuracion, AVG(scrollMaxPorcentaje) as promScroll
+             FROM formulario_visitas WHERE idCuestionario=$idCuestionario");
+        $form['funnel'] = $r ? $r->fetch_assoc() : [];
+        $form['funnel']['totalRespuestas'] = $form['totalRespuestas'];
+
+        // 12. Average completion time (seconds)
+        $r = mysqli_query($this->Connection,
+            "SELECT AVG(TIMESTAMPDIFF(SECOND, fechaInicio, fechaFin)) as promTiempo,
+                    MIN(TIMESTAMPDIFF(SECOND, fechaInicio, fechaFin)) as minTiempo,
+                    MAX(TIMESTAMPDIFF(SECOND, fechaInicio, fechaFin)) as maxTiempo
+             FROM cuestionario_respuestas_sesion
+             WHERE idCuestionario=$idCuestionario AND fechaFin IS NOT NULL AND fechaInicio IS NOT NULL");
+        $form['tiempoCompletado'] = $r ? $r->fetch_assoc() : [];
+
+        // 13. Responses per weekday
+        $r = mysqli_query($this->Connection,
+            "SELECT DAYOFWEEK(fechaInicio) as dia, COUNT(*) as total
+             FROM cuestionario_respuestas_sesion WHERE idCuestionario=$idCuestionario
+             GROUP BY DAYOFWEEK(fechaInicio) ORDER BY dia");
+        $form['respuestasPorDia'] = [];
+        if ($r) { while ($row = $r->fetch_assoc()) $form['respuestasPorDia'][] = $row; }
+
+        // 14. Responses per hour
+        $r = mysqli_query($this->Connection,
+            "SELECT HOUR(fechaInicio) as hora, COUNT(*) as total
+             FROM cuestionario_respuestas_sesion WHERE idCuestionario=$idCuestionario
+             GROUP BY HOUR(fechaInicio) ORDER BY hora");
+        $form['respuestasPorHora'] = [];
+        if ($r) { while ($row = $r->fetch_assoc()) $form['respuestasPorHora'][] = $row; }
+
+        $this->closet();
+        return $form;
+    }
+
+    // ================================================================
     //  CATALOGS (public)
     // ================================================================
 

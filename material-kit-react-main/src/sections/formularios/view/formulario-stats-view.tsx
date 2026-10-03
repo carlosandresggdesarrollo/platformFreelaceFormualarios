@@ -164,6 +164,15 @@ export function FormularioStatsView({ adminMode = false }: { adminMode?: boolean
 
         <Box sx={{ flex: 1 }} />
 
+        {!adminMode && (
+          <Button variant="contained" size="small"
+            startIcon={<Iconify icon="solar:chart-bold" />}
+            onClick={() => router.push(`/formularios/analytics/${id}`)}
+            sx={{ bgcolor: theme.primary, color: '#fff', '&:hover': { bgcolor: theme.primaryHover } }}>
+            Ver Analítica
+          </Button>
+        )}
+
         <Button variant="outlined" size="small"
           startIcon={<Iconify icon="mdi:download" />}
           onClick={(e) => setStatsMenuAnchor(e.currentTarget)}

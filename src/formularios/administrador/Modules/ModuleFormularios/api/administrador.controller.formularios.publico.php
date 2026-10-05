@@ -40,8 +40,8 @@ try {
             exit;
         }
 
-        $token = $_GET['token'] ?? '';
-        if (empty($token)) {
+        $token = is_string($_GET['token'] ?? null) ? $_GET['token'] : '';
+        if (!preg_match('/^[a-f0-9]{16,64}$/i', $token)) {
             echo json_encode(['success' => false, 'error' => 'Token requerido']);
             exit;
         }
@@ -63,6 +63,7 @@ try {
     // ================================================================
     if ($metodo === 'POST') {
         $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) $input = [];
         $accion = $input['accion'] ?? 'responder';
 
         if ($accion === 'actualizar_visita') {
@@ -78,9 +79,9 @@ try {
 
         if ($accion === 'responder') {
             $idCuestionario = intval($input['idCuestionario'] ?? 0);
-            $nombre = $input['nombre'] ?? null;
-            $email = $input['email'] ?? null;
-            $respuestas = $input['respuestas'] ?? [];
+            $nombre = is_string($input['nombre'] ?? null) ? $input['nombre'] : null;
+            $email = is_string($input['email'] ?? null) ? $input['email'] : null;
+            $respuestas = is_array($input['respuestas'] ?? null) ? array_slice($input['respuestas'], 0, 300, true) : [];
             $demograficos = [
                 'sexo' => $input['sexo'] ?? null,
                 'edad' => $input['edad'] ?? null,
@@ -92,7 +93,14 @@ try {
                 echo json_encode(['success' => false, 'error' => 'Datos incompletos']);
                 exit;
             }
+            // Freno anti-inundacion por IP y formulario (holgado para grupos detras de una misma red).
+            authLimitarIntentos('responder|' . $idCuestionario . '|' . authClientIp(), 120, 600);
+
             $result = $modelo->guardarRespuestas($idCuestionario, $nombre, $email, $respuestas, $demograficos);
+            if ($result === null) {
+                echo json_encode(['success' => false, 'error' => 'El formulario no esta disponible o las respuestas no son validas']);
+                exit;
+            }
             echo json_encode(['success' => true, 'resultado' => $result]);
             exit;
         }

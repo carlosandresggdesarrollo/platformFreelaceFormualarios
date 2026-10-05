@@ -16,7 +16,7 @@
         /*</Instaciacion de objetos>*/ 
     
         /*<Proceso>*/  
-        $IP = isset($_SERVER['HTTP_CLIENT_IP']) ? $_SERVER['HTTP_CLIENT_IP'] : isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR']; 
+        $IP = authClientIp(); 
 
             $profesion = isset($_POST['txt_profesion']) ? $_POST['txt_profesion'] : '';
             $JSON_RESULT = [];

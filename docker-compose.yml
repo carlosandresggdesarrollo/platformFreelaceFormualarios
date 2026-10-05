@@ -2,7 +2,6 @@ name: plata-formularios
 
 services:
   web_platform:
-    privileged: true
     build:
       context: docker/
       dockerfile: Dockerfile
@@ -15,14 +14,25 @@ services:
           cpus: "0.5"
           memory: 512M
     volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
       - ./src/:/var/www/html/
       - ./log/:/var/log/apache2/
+    environment:
+      - DB_HOST=mysql_platform
+      - DB_NAME=${DB_NAME:-formularios}
+      - DB_USER=${DB_USER:?Define DB_USER en .env}
+      - DB_PASS=${DB_PASS:?Define DB_PASS en .env}
+      - JWT_SECRET=${JWT_SECRET:?Define JWT_SECRET en .env}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - APP_URL=${APP_URL:-http://localhost:3039/formularios}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
     dns:
       - 8.8.8.8
       - 8.8.4.4
     ports:
-      - "8085:80"
+      - "127.0.0.1:8085:80"
     depends_on:
       - mysql_platform
     networks:
@@ -64,7 +74,7 @@ services:
           cpus: "0.5"
           memory: 1024M
     ports:
-      - "3303:3306"
+      - "127.0.0.1:3303:3306"
     volumes:
       - ./mysql-data:/var/lib/mysql
       - ./script/01_base_datos.sql:/docker-entrypoint-initdb.d/01_base_datos.sql:ro
@@ -84,8 +94,10 @@ services:
       - ./script/22_cliente_module.sql:/docker-entrypoint-initdb.d/22_cliente_module.sql:ro
       - ./script/24_slug_formularios.sql:/docker-entrypoint-initdb.d/24_slug_formularios.sql:ro
     environment:
-      - MYSQL_ROOT_PASSWORD=Kb.204.h3
-      - MYSQL_DATABASE=formularios
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASS:?Define DB_ROOT_PASS en .env}
+      - MYSQL_DATABASE=${DB_NAME:-formularios}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASS}
     networks:
       plata_formularios_network:
         aliases:
@@ -102,11 +114,9 @@ services:
     links:
       - mysql_platform:mysql_platform
     ports:
-      - "8088:80"
+      - "127.0.0.1:8088:80"
     environment:
       - PMA_HOST=mysql_platform
-      - PMA_USER=root
-      - PMA_PASSWORD=Kb.204.h3
     networks:
       plata_formularios_network:
         aliases:

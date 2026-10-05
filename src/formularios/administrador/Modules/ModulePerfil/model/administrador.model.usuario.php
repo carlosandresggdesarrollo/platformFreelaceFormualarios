@@ -2,265 +2,146 @@
 
 namespace administrador\Modules\ModulePerfil\Model\usuario;
     /*<Includes>*/
-        include_once('../../ModulePugins/administrador.Cofiguration.Conection.php');
+        include_once(__DIR__ . '/../../ModulePugins/administrador.Cofiguration.Conection.php');
     /*<Includes>*/
 
     /*<use>*/
         use administrador\Modules\ModulePugins\Conection\Conection as ConectionUsuario;
     /*<use>*/
 
+    /**
+     * Perfil del usuario con sesion. El id SIEMPRE sale de la sesion: el que llegue en la
+     * peticion se ignora, asi nadie puede leer o modificar el perfil de otra persona.
+     */
     class usuario  extends ConectionUsuario{
 
-        /*<Method construc>*/
-            public function __construct(){
-                // Cosntruct Father
-                parent::__construct();
+        public function __construct(){
+            parent::__construct();
+        }
+
+        private function idSesion(){
+            return intval($_SESSION['administrador-idUsuario'] ?? 0);
+        }
+
+        private function ejecutar($sql, $tipos, $params){
+            $stmt = mysqli_prepare($this->Connection, $sql);
+            if (!$stmt) {
+                error_log('[Perfil] ' . mysqli_error($this->Connection));
+                return false;
             }
-        /*<Method construc>*/
-    
-        /*<Method SelectFull>*/
-            public function selectFull($idUsuario){
-                /*<Variables> */
-                    $JSON_RESULT                    = [];
-                    $JSON_RESULT['information']     = [];
-                    $JSON_RESULT['message']         = '';
-                    $JSON_RESULT['error']           = '';
+            mysqli_stmt_bind_param($stmt, $tipos, ...$params);
+            if (!mysqli_stmt_execute($stmt)) {
+                error_log('[Perfil] ' . mysqli_stmt_error($stmt));
+                return false;
+            }
+            return $stmt;
+        }
 
-                    session_start();
-                  
-                /*</Variables> */
-                /*<Query> */
-                    $querySelect = '    SELECT *  FROM   
-                                                usuarios 
-                                        WHERE           
-                                                bstate      = 1 AND 
-                                                idUsuario   = '.$idUsuario.' ; ';
-                /*</Query> */
-                $JSON_RESULT['querySelect']     = $querySelect;
+        private function primeraFila($stmt){
+            $res = mysqli_stmt_get_result($stmt);
+            return $res ? $res->fetch_assoc() : null;
+        }
 
-                $this::open();            
-                    if ($resultQuery = mysqli_query($this->Connection, $querySelect)) {
-                        if ($resultQuery->num_rows > 0) {
-                            /*<Captura>*/
-                                while ($Rol = $resultQuery->fetch_array(MYSQLI_ASSOC)) {
-                                    array_push($JSON_RESULT['information'], $Rol);
-                                }
-                            /*</Captura>*/
-                        }else{
-                            $JSON_RESULT['information']     = [];
-                        }
-                        /*<Respuesta>*/
-                            $JSON_RESULT['message']         = "Good";   
-                        /*</Respuesta>*/
-                    } else {
-                        /*<Respuesta>*/
-                            $JSON_RESULT['message']         = "Bad";                          
-                            $JSON_RESULT['Error']           = "Error: <br>" . mysqli_error($this->Connection);
-                        /*</Respuesta>*/
-                    }        
-                $this::closet();
+        public function selectFull($idUsuario = null){
+            $JSON_RESULT = ['information' => [], 'message' => '', 'error' => ''];
+            $this->open();
+                $stmt = $this->ejecutar(
+                    'SELECT idUsuario, usuario, nombre, apellidos, email, profesion, tipoUsuario, imagen, estatus
+                       FROM usuarios WHERE bstate = 1 AND idUsuario = ?',
+                    'i', [$this->idSesion()]
+                );
+                if ($stmt) {
+                    $fila = $this->primeraFila($stmt);
+                    $JSON_RESULT['information'] = $fila ? [$fila] : [];
+                    $JSON_RESULT['message'] = 'Good';
+                } else {
+                    $JSON_RESULT['message'] = 'Bad';
+                }
+            $this->closet();
+            return $JSON_RESULT;
+        }
+
+        public function update($idUsuario, $nombre, $apellidos, $email, $imagen, $IP){
+            $JSON_RESULT = ['message' => '', 'error' => '', 'email' => []];
+            $id = $this->idSesion();
+            $email = trim((string) $email);
+
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $JSON_RESULT['message'] = 'Bad';
+                $JSON_RESULT['error'] = 'Correo no valido';
                 return $JSON_RESULT;
             }
-        /*<Method SelectFull>*/
 
-     
-       
+            $this->open();
+                $stmt = $this->ejecutar(
+                    'SELECT COUNT(idUsuario) AS total FROM usuarios WHERE bstate = 1 AND email = ? AND idUsuario != ?',
+                    'si', [$email, $id]
+                );
+                $repetido = !$stmt || intval($this->primeraFila($stmt)['total'] ?? 1) > 0;
 
-        /*<Method Update>*/
-            public function update(
-                                        $idUsuario,
-                                        $nombre,
-                                        $apellidos,
-                                        $email,
-                                        $imagen,
-                                        $IP
-
-                                    ){
-                $JSON_RESULT = [];
-
-                /*<Variables>*/
-                        /*</datos>*/
-                        session_start();
-                        $Date                       = date('Y-m-d h:i:s');
-                           
-                    /*<datos>*/
-                    $JSON_RESULT['message']         = '';
-                    $JSON_RESULT['error']           = '';
-                    $JSON_RESULT['email']           = [];
-                    $JSON_EMAIL                     = []; 
-                    $NUEVA_CONTRASENA               = '';                   
-                /*</Variables>*/        
-                
-                $JSON_EMAIL = $this->ValidarEmail($email,$idUsuario);        
-
-                if($JSON_EMAIL['message'] == 'Good' && !$JSON_EMAIL['repetido']){ 
-                    /*</Query>*/
-                        $QueryUpdate =    ' UPDATE  usuarios
-                                                SET    
-                                                        nombre               = "'.$nombre.'",              
-                                                        apellidos            = "'.$apellidos.'",   
-                                                        email                = "'.$email.'",          
-                                                        imagen               = "'.$imagen.'",                
-                                                        fechaModificacion    = "'.$Date.'",
-                                                        observacion          = " [ UPFATE '.$Date.' ], [ idUser '.$idUsuario.' IP:  '.$IP.'] "
-                                                    WHERE idUsuario          = '.$idUsuario.';';
-                    /*</Query>*/
-
-                    $JSON_RESULT['QueryDeleteUpdate']   = $QueryUpdate;
-
-                    $this->open();
-                        if (mysqli_query($this->Connection, $QueryUpdate)) {
-                            /*<Respuesta>*/
-                                $JSON_RESULT['message']             = "Good";                                 
-                            /*</Respuesta>*/
-                        } else {
-                            /*<Respuesta>*/
-                                $JSON_RESULT['message']             = "Bad";
-                                $JSON_RESULT['Error']               = "Error: <br>" . mysqli_error($this->Connection);
-                            /*</Respuesta>*/
-                        }        
-                    $this->closet(); 
-                }else{
-                    $JSON_RESULT['email']           =  $JSON_EMAIL;
-                    $JSON_RESULT['message']         = 'EMAIL REPETIDO';
-                } 
-                return $JSON_RESULT;
-            }
-        /*</Method Update>*/ 
-
-        /*<Method UpdatePassword>*/
-            public function updatePassword(
-                                            $idUsuario,
-                                            $contrasenaActual,
-                                            $contrasenaNueva,
-                                            $IP
-                                        ){
-                $JSON_RESULT = [];
-
-                /*<Variables>*/
-                    session_start();
-                    $Date                           = date('Y-m-d H:i:s');
-                    
-                    $JSON_RESULT['message']         = '';
-                    $JSON_RESULT['error']           = '';
-                    $JSON_RESULT['validated']       = false;                   
-                /*</Variables>*/        
-                
-                /*<Validar contraseña actual>*/
-                    $QueryValidate = '  SELECT contrasena 
-                                        FROM usuarios 
-                                        WHERE idUsuario = '.$idUsuario.' 
-                                        LIMIT 1;';
-                    
-                    $this->open();
-                        $result = mysqli_query($this->Connection, $QueryValidate);
-                        
-                        if ($result && mysqli_num_rows($result) > 0) {
-                            $row = mysqli_fetch_assoc($result);
-                            
-                            // Verificar que la contraseña actual sea correcta
-                            if (password_verify($contrasenaActual, $row['contrasena'])) {
-                                $JSON_RESULT['validated'] = true;
-                            } else {
-                                $JSON_RESULT['message'] = 'CONTRASEÑA ACTUAL INCORRECTA';
-                                $this->closet();
-                                return $JSON_RESULT;
-                            }
-                        } else {
-                            $JSON_RESULT['message'] = 'USUARIO NO ENCONTRADO';
-                            $this->closet();
-                            return $JSON_RESULT;
-                        }
-                    $this->closet();
-                /*</Validar contraseña actual>*/
-                
-                /*<Actualizar con nueva contraseña>*/
-                    if($JSON_RESULT['validated']){
-                        // Hashear nueva contraseña
-                        $hashedPassword = password_hash($contrasenaNueva, PASSWORD_BCRYPT);
-                        
-                        /*<Query>*/
-                            $QueryUpdate = ' UPDATE usuarios
-                                                SET    
-                                                    contrasena           = "'.$hashedPassword.'",                
-                                                    fechaModificacion    = "'.$Date.'",
-                                                    observacion          = " [ UPDATE PASSWORD '.$Date.' ], [ idUser '.$idUsuario.' IP: '.$IP.'] "
-                                                WHERE idUsuario = '.$idUsuario.';';
-                        /*</Query>*/
-
-                        $JSON_RESULT['QueryUpdate'] = $QueryUpdate;
-
-                        $this->open();
-                            if (mysqli_query($this->Connection, $QueryUpdate)) {
-                                /*<Respuesta>*/
-                                    $JSON_RESULT['message'] = "Good";                                 
-                                /*</Respuesta>*/
-                            } else {
-                                /*<Respuesta>*/
-                                    $JSON_RESULT['message'] = "Bad";
-                                    $JSON_RESULT['error']   = "Error: <br>" . mysqli_error($this->Connection);
-                                /*</Respuesta>*/
-                            }        
-                        $this->closet(); 
+                if ($repetido) {
+                    $JSON_RESULT['message'] = 'EMAIL REPETIDO';
+                } else {
+                    $obs = ' [ UPDATE ' . date('Y-m-d H:i:s') . ' ], [ idUser ' . $id . ' IP: ' . $IP . '] ';
+                    $sql = 'UPDATE usuarios SET nombre = ?, apellidos = ?, email = ?, fechaModificacion = NOW(), observacion = ?';
+                    $tipos = 'ssss';
+                    $params = [(string) $nombre, (string) $apellidos, $email, $obs];
+                    if (is_string($imagen) && preg_match('#^/uploads/perfiles/[A-Za-z0-9._-]+$#', $imagen)) {
+                        $sql .= ', imagen = ?';
+                        $tipos .= 's';
+                        $params[] = $imagen;
                     }
-                /*</Actualizar con nueva contraseña>*/
-                
+                    $sql .= ' WHERE idUsuario = ?';
+                    $tipos .= 'i';
+                    $params[] = $id;
+                    $JSON_RESULT['message'] = $this->ejecutar($sql, $tipos, $params) ? 'Good' : 'Bad';
+                }
+            $this->closet();
+            return $JSON_RESULT;
+        }
+
+        public function updatePassword($idUsuario, $contrasenaActual, $contrasenaNueva, $IP){
+            $JSON_RESULT = ['message' => '', 'error' => '', 'validated' => false];
+            $id = $this->idSesion();
+            $contrasenaNueva = (string) $contrasenaNueva;
+
+            if (strlen($contrasenaNueva) < 8) {
+                $JSON_RESULT['message'] = 'Bad';
+                $JSON_RESULT['error'] = 'La contraseña debe tener al menos 8 caracteres';
                 return $JSON_RESULT;
             }
-        /*</Method UpdatePassword>*/
 
-         /*<Method SelectFull>*/
-            public function ValidarEmail($email, $idUsuario){
-                /*<Variables> */
-                    $JSON_RESULT                    = [];
-                   
-                    $JSON_RESULT['message']         = '';
-                    $JSON_RESULT['error']           = '';
-                    $JSON_RESULT['repetido']        = true;
+            $this->open();
+                $stmt = $this->ejecutar('SELECT contrasena FROM usuarios WHERE bstate = 1 AND idUsuario = ? LIMIT 1', 'i', [$id]);
+                $fila = $stmt ? $this->primeraFila($stmt) : null;
 
-                   
-                /*</Variables> */
-                /*<Query> */
-                    $querySelect = '    SELECT count(idUsuario)AS total  FROM   
-                                                usuarios 
-                                        WHERE           
-                                                bstate      = 1                 AND 
-                                                email       = "'.$email.'"      AND
-                                                idUsuario   != '.$idUsuario.' ; ';
-                /*</Query> */
-                $JSON_RESULT['querySelect']     = $querySelect;
+                if (!$fila) {
+                    $JSON_RESULT['message'] = 'USUARIO NO ENCONTRADO';
+                } elseif (!password_verify((string) $contrasenaActual, $fila['contrasena'])) {
+                    $JSON_RESULT['message'] = 'CONTRASEÑA ACTUAL INCORRECTA';
+                } else {
+                    $JSON_RESULT['validated'] = true;
+                    $obs = ' [ UPDATE PASSWORD ' . date('Y-m-d H:i:s') . ' ], [ idUser ' . $id . ' IP: ' . $IP . '] ';
+                    $ok = $this->ejecutar(
+                        'UPDATE usuarios SET contrasena = ?, requiereCambioPass = 0, fechaModificacion = NOW(), observacion = ? WHERE idUsuario = ?',
+                        'ssi', [password_hash($contrasenaNueva, PASSWORD_BCRYPT), $obs, $id]
+                    );
+                    $JSON_RESULT['message'] = $ok ? 'Good' : 'Bad';
+                }
+            $this->closet();
+            return $JSON_RESULT;
+        }
 
-                $this::open();            
-                    if ($resultQuery = mysqli_query($this->Connection, $querySelect)) {
-                       /*<Captura>*/
-                            while ($Rol = $resultQuery->fetch_array(MYSQLI_ASSOC)) {
-                                if($Rol['total'] == 0){
-                                    $JSON_RESULT['repetido'] = false ;
-                                }else{
-                                    $JSON_RESULT['repetido'] = true;
-                                }
-                            }
-                        /*</Captura>*/
-                        /*<Respuesta>*/
-                            $JSON_RESULT['message']         = "Good";   
-                        /*</Respuesta>*/
-                    } else {
-                        /*<Respuesta>*/
-                            $JSON_RESULT['message']         = "Bad";                          
-                            $JSON_RESULT['Error']           = "Error: <br>" . mysqli_error($this->Connection);
-                        /*</Respuesta>*/
-                    }        
-                $this::closet();
-                return $JSON_RESULT;
-            }
-        /*<Method SelectFull>*/
-
-    
- 
-        
-      
-
-       
+        /** Cambio forzado tras el primer login: solo procede si el usuario tiene la marca pendiente. */
+        public function cambiarPasswordObligatorio($contrasenaNueva){
+            $this->open();
+                $stmt = $this->ejecutar(
+                    'UPDATE usuarios SET contrasena = ?, requiereCambioPass = 0, fechaModificacion = NOW()
+                      WHERE idUsuario = ? AND bstate = 1 AND requiereCambioPass = 1',
+                    'si', [password_hash((string) $contrasenaNueva, PASSWORD_BCRYPT), $this->idSesion()]
+                );
+                $ok = $stmt && mysqli_stmt_affected_rows($stmt) === 1;
+            $this->closet();
+            return $ok;
+        }
     }
-
-    

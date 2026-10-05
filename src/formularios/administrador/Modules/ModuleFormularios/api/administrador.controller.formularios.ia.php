@@ -21,7 +21,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $input = json_decode(file_get_contents('php://input'), true);
-$descripcion = trim($input['descripcion'] ?? '');
+$descripcion = is_array($input) && is_string($input['descripcion'] ?? null) ? trim($input['descripcion']) : '';
+
+// Cada llamada cuesta dinero: limite por usuario y tamaño maximo del texto.
+authLimitarIntentos('ia-formularios|' . $idUsuario, 20, 3600);
+$descripcion = mb_substr($descripcion, 0, 4000);
 
 if (empty($descripcion)) {
     echo json_encode(['success' => false, 'error' => 'Debes describir el formulario que quieres crear']);
@@ -34,7 +38,7 @@ $model  = $config['model'] ?? 'deepseek-chat';
 $apiUrl = $config['api_url'] ?? 'https://api.deepseek.com/chat/completions';
 
 if (empty($apiKey) || $apiKey === 'TU_API_KEY_DEEPSEEK_AQUI') {
-    echo json_encode(['success' => false, 'error' => 'La API key de DeepSeek no esta configurada. Edita el archivo config/deepseek.config.php']);
+    echo json_encode(['success' => false, 'error' => 'La creacion con IA no esta configurada en este servidor']);
     exit;
 }
 
@@ -110,8 +114,8 @@ if ($response === false) {
 $data = json_decode($response, true);
 
 if (isset($data['error'])) {
-    $errMsg = $data['error']['message'] ?? 'Error desconocido de DeepSeek';
-    echo json_encode(['success' => false, 'error' => "DeepSeek: $errMsg"]);
+    error_log('[Formularios IA] DeepSeek: ' . json_encode($data['error']));
+    echo json_encode(['success' => false, 'error' => 'El servicio de IA no pudo procesar la solicitud. Intenta de nuevo.']);
     exit;
 }
 
@@ -135,5 +139,5 @@ try {
     echo json_encode($result);
 } catch (\Throwable $e) {
     error_log('[Formularios IA] ' . $e->getMessage());
-    echo json_encode(['success' => false, 'error' => 'Error al crear el formulario: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'error' => 'Error al crear el formulario']);
 }

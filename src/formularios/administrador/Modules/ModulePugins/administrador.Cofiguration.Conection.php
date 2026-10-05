@@ -11,24 +11,30 @@ namespace  administrador\Modules\ModulePugins\Conection;
     class Conection {
       
     
-        // Para Docker: usar nombre del servicio mysql_platform
-        protected $Server   = 'mysql_platform';
-        protected $User     = 'root';
-        protected $Password = 'Kb.204.h3';
-        protected $Database = 'formularios';
+        // Las credenciales llegan por variables de entorno (DB_HOST, DB_USER, DB_PASS, DB_NAME).
+        protected $Server;
+        protected $User;
+        protected $Password;
+        protected $Database;
 
-        /* Para localhost sin Docker:
-        protected $Server   = '127.0.0.1';
-        protected $User     = 'root';
-        protected $Password = 'Kb.204.h3';
-        protected $Database = 'formularios'; */
-
-        
         public $Connection;
 
         public function __construct(){ }
 
+        protected function cargarCredenciales(){
+            // Si el guardia de acceso (auto_prepend_file) no corrio, no se toca la base de datos.
+            if (PHP_SAPI !== 'cli' && !defined('AUTH_BRIDGE_LOADED')) {
+                http_response_code(500);
+                exit('Configuracion de seguridad incompleta: falta auto_prepend_file');
+            }
+            $this->Server  = getenv('DB_HOST') ?: 'mysql_platform';
+            $this->User     = getenv('DB_USER') ?: '';
+            $this->Password = getenv('DB_PASS') ?: '';
+            $this->Database = getenv('DB_NAME') ?: 'formularios';
+        }
+
         public function open(){
+            $this->cargarCredenciales();
             /*<En el servidors>*/
                  $this->Connection = @mysqli_connect(
                     $this->Server,

@@ -27,5 +27,5 @@ try {
     ]);
 } catch (\Throwable $e) {
     error_log('[Home audit] ' . $e->getMessage());
-    echo json_encode(['success' => false, 'error' => 'Error del servidor: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'error' => 'Error del servidor']);
 }

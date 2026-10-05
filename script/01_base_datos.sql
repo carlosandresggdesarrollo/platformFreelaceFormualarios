@@ -442,7 +442,7 @@ CREATE TABLE `servidorCorreo` (
 --
 
 INSERT INTO `servidorCorreo` (`idSCorreo`, `servidor`, `puerto`, `usuario`, `contrasena`, `tocken`, `fechaCreacion`, `fechaModificacion`, `observacion`, `bstate`) VALUES
-(1, 'smtp.gmail.com', '587', 'carlos.andres.g.g.desarrollo@gmail.com', 'flgi kido axex yjag', '.', '2023-12-19 18:06:20', '2023-12-19 18:06:20', '.', 1);
+(1, 'smtp.example.com', '587', 'usuario@example.com', 'CONFIGURAR-EN-ENV', '.', '2023-12-19 18:06:20', '2023-12-19 18:06:20', '.', 1);
 
 -- --------------------------------------------------------
 

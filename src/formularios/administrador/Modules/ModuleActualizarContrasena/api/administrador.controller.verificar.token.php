@@ -1,49 +1,29 @@
 <?php
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
-/*<Include classes>*/
-    include_once('../model/administrador.model.correo.php');
-/*</Include classes>*/
+include_once(__DIR__ . '/../model/administrador.model.correo.php');
 
-/*<Import>*/
 use  administrador\Modules\ModuleActualizarContrasena\Model\correo\correo as correo;
 
-/*<Controlador>*/
-$JSON_RESULT = [];
-
 try {
-    /*<Instaciacion de objetos>*/
-        $Object = new correo();
-    /*</Instaciacion de objetos>*/
+    authLimitarIntentos('recuperar-token|' . authClientIp(), 30, 900);
 
-    // Obtener token del GET o POST
     $input = json_decode(file_get_contents('php://input'), true);
-    $token = isset($input['token']) ? $input['token'] : (isset($_GET['token']) ? $_GET['token'] : '');
+    $token = is_array($input) && isset($input['token']) ? $input['token'] : ($_GET['token'] ?? '');
 
-    if(empty($token)){
-        $JSON_RESULT['message'] = 'Bad';
-        $JSON_RESULT['error'] = 'Token no proporcionado';
-        echo json_encode($JSON_RESULT);
+    if (!is_string($token) || $token === '') {
+        echo json_encode(['message' => 'Bad', 'error' => 'Token no proporcionado']);
         exit;
     }
 
-    // Verificar token
-    $JSON_RESULT = $Object->verificarToken($token);
-
-    echo json_encode($JSON_RESULT);
-
-} catch(Exception $e){
-    $JSON_RESULT['message'] = 'Bad';
-    $JSON_RESULT['error'] = 'Error del servidor: ' . $e->getMessage();
-    echo json_encode($JSON_RESULT);
+    $resultado = (new correo())->verificarToken($token);
+    unset($resultado['idUsuario']);
+    echo json_encode($resultado);
+} catch (\Throwable $e) {
+    error_log('[Recuperar] ' . $e->getMessage());
+    echo json_encode(['message' => 'Bad', 'error' => 'Error del servidor']);
 }
-/*</Controlador>*/
-
-?>

@@ -1,86 +1,42 @@
 <?php
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
-/*<Include classes>*/
-    include_once('../model/administrador.model.correo.php');
-/*</Include classes>*/
+include_once(__DIR__ . '/../model/administrador.model.correo.php');
 
-/*<Import>*/
 use  administrador\Modules\ModuleActualizarContrasena\Model\correo\correo as correo;
 
-/*<Controlador>*/
-$JSON_RESULT = [];
-
 try {
-    /*<Instaciacion de objetos>*/
-        $Object = new correo();
-    /*</Instaciacion de objetos>*/
+    authLimitarIntentos('recuperar-token|' . authClientIp(), 30, 900);
 
-    // Obtener datos del POST
     $input = json_decode(file_get_contents('php://input'), true);
-    $token = isset($input['token']) ? $input['token'] : '';
-    $nuevaContrasena = isset($input['contrasena']) ? $input['contrasena'] : '';
+    $token = is_array($input) && is_string($input['token'] ?? null) ? $input['token'] : '';
+    $nuevaContrasena = is_array($input) && is_string($input['contrasena'] ?? null) ? $input['contrasena'] : '';
 
-    if(empty($token)){
-        $JSON_RESULT['message'] = 'Bad';
-        $JSON_RESULT['error'] = 'Token no proporcionado';
-        echo json_encode($JSON_RESULT);
+    $error = '';
+    if ($token === '') {
+        $error = 'Token no proporcionado';
+    } elseif (strlen($nuevaContrasena) < 8 || strlen($nuevaContrasena) > 100) {
+        $error = 'La contraseña debe tener entre 8 y 100 caracteres';
+    } elseif (!preg_match('/[A-Z]/', $nuevaContrasena)) {
+        $error = 'La contraseña debe tener al menos una mayúscula';
+    } elseif (!preg_match('/[a-z]/', $nuevaContrasena)) {
+        $error = 'La contraseña debe tener al menos una minúscula';
+    } elseif (!preg_match('/[0-9]/', $nuevaContrasena)) {
+        $error = 'La contraseña debe tener al menos un número';
+    }
+    if ($error !== '') {
+        echo json_encode(['message' => 'Bad', 'error' => $error]);
         exit;
     }
 
-    if(empty($nuevaContrasena)){
-        $JSON_RESULT['message'] = 'Bad';
-        $JSON_RESULT['error'] = 'La nueva contraseña es requerida';
-        echo json_encode($JSON_RESULT);
-        exit;
-    }
-
-    // Validar contraseña (mínimo 8 caracteres, mayúscula, minúscula, número)
-    if(strlen($nuevaContrasena) < 8){
-        $JSON_RESULT['message'] = 'Bad';
-        $JSON_RESULT['error'] = 'La contraseña debe tener al menos 8 caracteres';
-        echo json_encode($JSON_RESULT);
-        exit;
-    }
-
-    if(!preg_match('/[A-Z]/', $nuevaContrasena)){
-        $JSON_RESULT['message'] = 'Bad';
-        $JSON_RESULT['error'] = 'La contraseña debe tener al menos una mayúscula';
-        echo json_encode($JSON_RESULT);
-        exit;
-    }
-
-    if(!preg_match('/[a-z]/', $nuevaContrasena)){
-        $JSON_RESULT['message'] = 'Bad';
-        $JSON_RESULT['error'] = 'La contraseña debe tener al menos una minúscula';
-        echo json_encode($JSON_RESULT);
-        exit;
-    }
-
-    if(!preg_match('/[0-9]/', $nuevaContrasena)){
-        $JSON_RESULT['message'] = 'Bad';
-        $JSON_RESULT['error'] = 'La contraseña debe tener al menos un número';
-        echo json_encode($JSON_RESULT);
-        exit;
-    }
-
-    // Actualizar contraseña
-    $JSON_RESULT = $Object->actualizarContrasena($token, $nuevaContrasena);
-
-    echo json_encode($JSON_RESULT);
-
-} catch(Exception $e){
-    $JSON_RESULT['message'] = 'Bad';
-    $JSON_RESULT['error'] = 'Error del servidor: ' . $e->getMessage();
-    echo json_encode($JSON_RESULT);
+    $resultado = (new correo())->actualizarContrasena($token, $nuevaContrasena);
+    unset($resultado['idUsuario']);
+    echo json_encode($resultado);
+} catch (\Throwable $e) {
+    error_log('[Recuperar] ' . $e->getMessage());
+    echo json_encode(['message' => 'Bad', 'error' => 'Error del servidor']);
 }
-/*</Controlador>*/
-
-?>

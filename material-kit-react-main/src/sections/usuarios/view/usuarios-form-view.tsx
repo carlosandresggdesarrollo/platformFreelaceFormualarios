@@ -117,7 +117,6 @@ export function UsuariosFormView() {
       if (result.message === 'Good' && result.information?.length > 0) {
         const usuarioData = result.information[0];
         setUsuario(usuarioData.usuario || '');
-        setContrasena(usuarioData.contrasena || '');
         setNombre(usuarioData.nombre || '');
         setApellidos(usuarioData.apellidos || '');
         setEmail(usuarioData.email || '');
@@ -274,7 +273,7 @@ const limpiarCaracteresEspeciales = (texto: string) => texto.replace(/['"`]/g, '
       setUsuarioError(true);
       hasError = true;
     }
-    if (!contrasenaLimpia) {
+    if (!isEdit && !contrasenaLimpia) {
       setContrasenaError(true);
       hasError = true;
     }
@@ -307,7 +306,7 @@ const limpiarCaracteresEspeciales = (texto: string) => texto.replace(/['"`]/g, '
     }
 
     // Validación longitud contraseña
-    if (contrasenaLimpia.length < 8 || contrasenaLimpia.length > 100) {
+    if (!isEdit && (contrasenaLimpia.length < 8 || contrasenaLimpia.length > 100)) {
       setMessageType('warning');
       setMessageText('¡Contraseña debe de contener más de 8 caracteres y menos de 100!');
       setMessageModal(true);
@@ -315,7 +314,7 @@ const limpiarCaracteresEspeciales = (texto: string) => texto.replace(/['"`]/g, '
     }
 
     // Validación formato contraseña
-    if (!validarContrasena(contrasenaLimpia)) {
+    if (!isEdit && !validarContrasena(contrasenaLimpia)) {
       setMessageType('warning');
       setMessageText('¡Contraseña debe de contener al menos una letra mayúscula, una letra minúscula y un número!');
       setMessageModal(true);

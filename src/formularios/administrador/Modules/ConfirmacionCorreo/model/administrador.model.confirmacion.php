@@ -2,7 +2,7 @@
 
 namespace administrador\Modules\ConfirmacionCorreo\Model\confirmacion;
     /*<Includes>*/
-        include_once('../../ModulePugins/administrador.Cofiguration.Conection.php');
+        include_once(__DIR__ . '/../../ModulePugins/administrador.Cofiguration.Conection.php');
     /*<Includes>*/
 
     /*<use>*/
@@ -25,7 +25,13 @@ namespace administrador\Modules\ConfirmacionCorreo\Model\confirmacion;
             $JSON_RESULT['idUsuario'] = 0;
             $JSON_RESULT['estatus'] = '';
 
-            $token = trim($token);
+            // El token de confirmacion son 64 caracteres hexadecimales; cualquier otra cosa no existe.
+            $token = is_string($token) ? trim($token) : '';
+            if (!preg_match('/^[a-f0-9]{64}$/', $token)) {
+                $JSON_RESULT['message'] = "Good";
+                $JSON_RESULT['error'] = "Token no válido o usuario no encontrado";
+                return $JSON_RESULT;
+            }
 
             $QuerySelect = 'SELECT idUsuario, estatus, nombre, apellidos, email
                             FROM usuarios
@@ -49,7 +55,7 @@ namespace administrador\Modules\ConfirmacionCorreo\Model\confirmacion;
                 }
             } else {
                 $JSON_RESULT['message'] = "Bad";
-                $JSON_RESULT['error'] = "Error: " . mysqli_error($this->Connection);
+                $JSON_RESULT['error'] = 'Error de base de datos';
             }
             $this::closet();
 
@@ -65,11 +71,8 @@ namespace administrador\Modules\ConfirmacionCorreo\Model\confirmacion;
             // Si el estatus es PENDIENTE, actualizamos a CONFIRMADA
             if(strtoupper($estatusActual) === 'PENDIENTE'){
                 $DATE = date('Y-m-d H:i:s');
-                $IP = isset($_SERVER['HTTP_CLIENT_IP'])
-                    ? $_SERVER['HTTP_CLIENT_IP']
-                    : (isset($_SERVER['HTTP_X_FORWARDED_FOR'])
-                        ? $_SERVER['HTTP_X_FORWARDED_FOR']
-                        : $_SERVER['REMOTE_ADDR']);
+                $IP = \authClientIp();
+                $idUsuario = intval($idUsuario);
 
                 $QueryUpdate = 'UPDATE usuarios
                                 SET estatus = "CONFIRMADA",
@@ -85,7 +88,7 @@ namespace administrador\Modules\ConfirmacionCorreo\Model\confirmacion;
                     $JSON_RESULT['texto'] = "¡Correo confirmado con éxito! El siguiente paso es iniciar sesión y completar tu registro.";
                 } else {
                     $JSON_RESULT['message'] = "Bad";
-                    $JSON_RESULT['error'] = "Error al confirmar: " . mysqli_error($this->Connection);
+                    $JSON_RESULT['error'] = 'Error de base de datos';
                 }
                 $this::closet();
             } else if(strtoupper($estatusActual) === 'INACTIVO'){

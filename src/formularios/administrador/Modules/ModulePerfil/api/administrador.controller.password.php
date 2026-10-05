@@ -16,7 +16,7 @@ $JSON_RESULT = [];
         
         /*<Proceso>*/  
             $JSON_RESULT = []; 
-            $IP = isset($_SERVER['HTTP_CLIENT_IP']) ? $_SERVER['HTTP_CLIENT_IP'] : (isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR']); 
+            $IP = authClientIp(); 
             
             $JSON_RESULT = $Object->updatePassword(
                 $_POST['txt_idUsuario'],                
@@ -33,7 +33,7 @@ $JSON_RESULT = [];
     } catch(Exception $e){
         $JSON_RESULT = [];
         $JSON_RESULT['message'] = 'Sorry error server';
-        $JSON_RESULT['error'] = $e->getMessage();
+        $JSON_RESULT['error'] = 'Error del servidor';
         echo json_encode($JSON_RESULT);
     }
     

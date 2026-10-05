@@ -1,6 +1,5 @@
-# Permitir subidas grandes (películas, audio, PDF): sin límite de tamaño a nivel de Apache.
-# El tope real lo definen PHP (post_max_size / upload_max_filesize = 8G).
-LimitRequestBody 0
+# Tope de tamaño por peticion (25 MB), alineado con post_max_size de PHP.
+LimitRequestBody 26214400
 
 <IfModule mod_rewrite.c>
   RewriteEngine On

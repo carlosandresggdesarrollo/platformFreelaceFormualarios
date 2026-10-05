@@ -16,7 +16,7 @@
             $ObjectRoles = new Usuarios_create();
         /*</Instaciacion de objetos>*/      
         /*</Proceso>*/  
-            $IP             = isset($_SERVER['HTTP_CLIENT_IP']) ? $_SERVER['HTTP_CLIENT_IP'] : isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR']; 
+            $IP             = authClientIp(); 
             $JSON_RESULT    = $ObjectRoles->updateEstatus(
                 $_POST['estatus'],
                 $_POST['idUsuario'],

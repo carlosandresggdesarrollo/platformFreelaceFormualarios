@@ -191,3 +191,5 @@ secrets/
 .env*
 !.env.example
 credentials.json
+# Volcados de base de datos (contienen datos personales)
+database/

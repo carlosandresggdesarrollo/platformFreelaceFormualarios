@@ -138,5 +138,5 @@ try {
     echo json_encode(['success' => false, 'error' => 'Metodo no permitido']);
 } catch (\Throwable $e) {
     error_log('[Home modal] ' . $e->getMessage());
-    echo json_encode(['success' => false, 'error' => 'Error del servidor: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'error' => 'Error del servidor']);
 }

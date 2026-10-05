@@ -1,89 +1,51 @@
 <?php
 
-// Debug temporal - QUITAR EN PRODUCCIÓN
-ini_set('display_errors', 0);
-error_reporting(E_ALL);
-
-$allowed_origins = [
-    'http://10.1.19.24',
-    'https://whatsapp.coeficiente.mx',
-    'http://whatsapp.coeficiente.mx',
-    'http://localhost:3039'
-];
-
-$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-
-if (in_array($origin, $allowed_origins)) {
-    header("Access-Control-Allow-Origin: $origin");
-} else {
-    header("Access-Control-Allow-Origin: https://whatsapp.coeficiente.mx");
-}
-header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
-header("Access-Control-Allow-Credentials: true");
 header("Content-Type: application/json");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
+    http_response_code(204);
     exit;
 }
 
 try {
-    // Verificar que los archivos existen antes de incluirlos
-    $jwtHelperPath = __DIR__ . '/jwt.helper.php';
-    $modelPath = __DIR__ . '/../model/jwt.model.php';
-    
-    if (!file_exists($jwtHelperPath)) {
-        throw new Exception("No se encuentra jwt.helper.php en: " . $jwtHelperPath);
-    }
-    
-    if (!file_exists($modelPath)) {
-        throw new Exception("No se encuentra jwt.model.php en: " . $modelPath);
-    }
-    
-    require_once $jwtHelperPath;
-    require_once $modelPath;
-    
+    require_once __DIR__ . '/jwt.helper.php';
+    require_once __DIR__ . '/../model/jwt.model.php';
+
     $input = json_decode(file_get_contents('php://input'), true);
-    
-    $usuario = $input['usuario'] ?? '';
-    $password = $input['password'] ?? '';
-    
-    if (empty($usuario) || empty($password)) {
+
+    $usuario = is_string($input['usuario'] ?? null) ? trim($input['usuario']) : '';
+    $password = is_string($input['password'] ?? null) ? $input['password'] : '';
+
+    if ($usuario === '' || $password === '') {
         http_response_code(400);
         echo json_encode(['message' => 'CAMPOS_REQUERIDOS']);
         exit;
     }
-    
+
+    $IP = authClientIp();
+    authLimitarIntentos('login-ip|' . $IP, 30, 900);
+    authLimitarIntentos('login-usuario|' . strtolower($usuario), 8, 900);
+
     $model = new JWTModel();
-    
-    // Validar credenciales
+
     $resultado = $model->validarCredenciales($usuario, $password);
-    
+
     if (!$resultado['valid']) {
         http_response_code(401);
         echo json_encode(['message' => 'CREDENCIALES_INVALIDAS']);
         exit;
     }
-    
-    // Crear sesión en BD
-    $IP = isset($_SERVER['HTTP_CLIENT_IP']) 
-        ? $_SERVER['HTTP_CLIENT_IP'] 
-        : (isset($_SERVER['HTTP_X_FORWARDED_FOR']) 
-            ? $_SERVER['HTTP_X_FORWARDED_FOR'] 
-            : $_SERVER['REMOTE_ADDR']);
-    
-    $navegador = $_SERVER['HTTP_USER_AGENT'];
-    
+
+    $navegador = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255);
+
     $sesion = $model->crearSesion($resultado['idUsuario'], $IP, $navegador);
-    
+
     if (!$sesion['success']) {
         http_response_code(500);
         echo json_encode(['message' => 'ERROR_CREAR_SESION']);
         exit;
     }
-    
-    // Generar tokens
+
     $userData = [
         'idUsuario' => $resultado['idUsuario'],
         'idSesion' => $sesion['idSesion'],
@@ -94,18 +56,22 @@ try {
     $accessToken = JWTHelper::generarAccessToken($userData);
     $refreshToken = JWTHelper::generarRefreshToken($userData);
 
-    // Guardar refresh token en BD
     $model->guardarRefreshToken($sesion['idSesion'], $refreshToken);
 
-    // Establecer sesión PHP para compatibilidad con módulos legacy
-    session_start();
+    // Sesion PHP para la web. Se regenera el id para que no se reutilice uno previo al login.
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    session_regenerate_id(true);
+    $_SESSION = [];
     $_SESSION["administrador-idUsuario"] = $resultado['idUsuario'];
     $_SESSION["administrador-tipoUsuario"] = $resultado['tipoUsuario'];
+    $_SESSION["administrador-idSesion"] = $sesion['idSesion'];
     $_SESSION["administrador-nombre"] = $resultado['nombre'];
     $_SESSION["administrador-estatus"] = $resultado['estatus'];
     $_SESSION["administrador-imagen"] = $resultado['imagen'];
+    $_SESSION["administrador-session"] = true;
 
-    // Registrar login para tracking de seguridad
     try {
         $clienteModelPath = __DIR__ . '/../../Modules/ModuleClienteDashboard/model/administrador.model.cliente.dashboard.php';
         if (file_exists($clienteModelPath)) {
@@ -113,8 +79,8 @@ try {
             $loginTracker = new \administrador\Modules\ModuleClienteDashboard\Model\ClienteDashboardModel();
             $loginTracker->registrarLogin(intval($resultado['idUsuario']));
         }
-    } catch (Exception $e) {
-        // No bloquear login si falla el tracking
+    } catch (\Throwable $e) {
+        // El tracking no debe bloquear el login
     }
 
     echo json_encode([
@@ -132,22 +98,9 @@ try {
             'requiereCambioPass' => $resultado['requiereCambioPass'] ?? 0
         ]
     ]);
-    
-} catch (Exception $e) {
+
+} catch (\Throwable $e) {
+    error_log('[Login] ' . $e->getMessage() . ' en ' . $e->getFile() . ':' . $e->getLine());
     http_response_code(500);
-    echo json_encode([
-        'message' => 'ERROR_SERVIDOR', 
-        'error' => $e->getMessage(),
-        'file' => $e->getFile(),
-        'line' => $e->getLine()
-    ]);
-} catch (Error $e) {
-    // Capturar errores fatales de PHP 7
-    http_response_code(500);
-    echo json_encode([
-        'message' => 'ERROR_FATAL', 
-        'error' => $e->getMessage(),
-        'file' => $e->getFile(),
-        'line' => $e->getLine()
-    ]);
+    echo json_encode(['message' => 'ERROR_SERVIDOR']);
 }

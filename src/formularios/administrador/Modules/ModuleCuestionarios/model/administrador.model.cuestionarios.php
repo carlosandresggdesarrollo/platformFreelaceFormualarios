@@ -47,7 +47,7 @@ class CuestionariosModel extends Conection
             }
             $this->closet();
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            error_log('[Backend] ' . $e->getMessage()); return ['success' => false, 'error' => 'Error del servidor'];
         }
         return $result;
     }
@@ -94,7 +94,7 @@ class CuestionariosModel extends Conection
             $this->closet();
             return $cuestionario;
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            error_log('[Backend] ' . $e->getMessage()); return ['success' => false, 'error' => 'Error del servidor'];
         }
     }
 
@@ -122,7 +122,7 @@ class CuestionariosModel extends Conection
                 return ['success' => false, 'error' => $error];
             }
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            error_log('[Backend] ' . $e->getMessage()); return ['success' => false, 'error' => 'Error del servidor'];
         }
     }
 
@@ -151,7 +151,7 @@ class CuestionariosModel extends Conection
                 return ['success' => false, 'error' => $error];
             }
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            error_log('[Backend] ' . $e->getMessage()); return ['success' => false, 'error' => 'Error del servidor'];
         }
     }
 
@@ -173,7 +173,7 @@ class CuestionariosModel extends Conection
                 return ['success' => false, 'error' => $error];
             }
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            error_log('[Backend] ' . $e->getMessage()); return ['success' => false, 'error' => 'Error del servidor'];
         }
     }
 
@@ -221,7 +221,7 @@ class CuestionariosModel extends Conection
             $this->closet();
             return ['success' => true, 'idPregunta' => $idPregunta];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            error_log('[Backend] ' . $e->getMessage()); return ['success' => false, 'error' => 'Error del servidor'];
         }
     }
 
@@ -269,7 +269,7 @@ class CuestionariosModel extends Conection
             $this->closet();
             return ['success' => true];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            error_log('[Backend] ' . $e->getMessage()); return ['success' => false, 'error' => 'Error del servidor'];
         }
     }
 
@@ -306,7 +306,7 @@ class CuestionariosModel extends Conection
                 return ['success' => false, 'error' => $error];
             }
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            error_log('[Backend] ' . $e->getMessage()); return ['success' => false, 'error' => 'Error del servidor'];
         }
     }
 
@@ -364,7 +364,7 @@ class CuestionariosModel extends Conection
             $this->closet();
             return ['success' => true, 'idCuestionario' => $idCuestionario];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            error_log('[Backend] ' . $e->getMessage()); return ['success' => false, 'error' => 'Error del servidor'];
         }
     }
 
@@ -393,7 +393,7 @@ class CuestionariosModel extends Conection
             }
             $this->closet();
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            error_log('[Backend] ' . $e->getMessage()); return ['success' => false, 'error' => 'Error del servidor'];
         }
         return $result;
     }
@@ -448,7 +448,7 @@ class CuestionariosModel extends Conection
             $this->closet();
             return $cuestionario;
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            error_log('[Backend] ' . $e->getMessage()); return ['success' => false, 'error' => 'Error del servidor'];
         }
     }
 
@@ -521,7 +521,7 @@ class CuestionariosModel extends Conection
                 'resultado' => $resultado
             ];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            error_log('[Backend] ' . $e->getMessage()); return ['success' => false, 'error' => 'Error del servidor'];
         }
     }
 
@@ -630,7 +630,7 @@ class CuestionariosModel extends Conection
                 'preguntas'          => $preguntas
             ];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            error_log('[Backend] ' . $e->getMessage()); return ['success' => false, 'error' => 'Error del servidor'];
         }
     }
 
@@ -700,7 +700,7 @@ class CuestionariosModel extends Conection
                 'participacionesPorDia'    => $participacionesPorDia,
             ];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            error_log('[Backend] ' . $e->getMessage()); return ['success' => false, 'error' => 'Error del servidor'];
         }
     }
 }

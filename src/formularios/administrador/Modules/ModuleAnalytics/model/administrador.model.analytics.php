@@ -36,8 +36,7 @@ class AnalyticsModel extends Conection
 
     public function registrarVisita(string $pagina, ?string $referrer, ?string $idioma, ?string $resolucion): array
     {
-        $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['HTTP_CLIENT_IP'] ?? $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-        if (strpos($ip, ',') !== false) $ip = trim(explode(',', $ip)[0]);
+        $ip = \authClientIp();
         $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
         $parsed = $this->parseUserAgent($ua);
 

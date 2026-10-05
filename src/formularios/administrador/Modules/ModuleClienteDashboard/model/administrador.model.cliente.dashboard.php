@@ -41,10 +41,7 @@ class ClienteDashboardModel extends Conection {
     // ================================================================
 
     public function registrarLogin($idUsuario) {
-        $ip = $_SERVER['HTTP_CLIENT_IP']
-            ?? $_SERVER['HTTP_X_FORWARDED_FOR']
-            ?? $_SERVER['REMOTE_ADDR']
-            ?? '';
+        $ip = \authClientIp();
         $ua = $this->parseUserAgent();
 
         $this->open();

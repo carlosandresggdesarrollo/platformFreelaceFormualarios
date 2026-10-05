@@ -1,44 +1,28 @@
 <?php
-/*<Include classes>*/
-    include_once('../model/administrador.model.usuario.php');
-/*</Include classes>*/
+header('Content-Type: application/json');
 
+include_once(__DIR__ . '/../model/administrador.model.usuario.php');
 
+try {
+    $IP = authClientIp();
+    authLimitarIntentos('registro|' . $IP, 10, 3600);
 
-$JSON_RESULT            = [];
-/*<Controlador>*/      
-    try{
-        /*<Instaciacion de objetos>*/                
-            $Object = new usuario();
-        /*</Instaciacion de objetos>*/ 
-        
-        /*<Proceso>*/  
-            $JSON_RESULT    = []; 
-            $IP             = isset($_SERVER['HTTP_CLIENT_IP']) ? $_SERVER['HTTP_CLIENT_IP'] : isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR']; 
-            $tipo       = isset($_POST['txt_tipo']) ? strtoupper($_POST['txt_tipo']) : 'CLIENTE';
-            $profesion  = isset($_POST['txt_profesion']) ? $_POST['txt_profesion'] : '';
-            $JSON_RESULT    =  $Object->crear(
-                $_POST['txt_usuario'],
-                $_POST['txt_contrasena'],
-                $_POST['txt_nombre'],
-                $_POST['txt_apellido'],
-                $_POST['txt_email'],
-                $IP,
-                $tipo,
-                $profesion
-            ); 
-        /*</Proceso>*/  
-        
-        /*<Respuesta>*/  
-            echo json_encode($JSON_RESULT);
-        /*</Respuesta>*/  
+    $campo = function ($nombre) {
+        return is_string($_POST[$nombre] ?? null) ? $_POST[$nombre] : '';
+    };
 
-    } catch(Exepction $e){
-        $JSON_RESULT            = [];
-        $JSON_RESULT['message'] = 'Sorry errt server'; 
-    }
-    
-/*</Controlador>*/    
-       
-
-?>
+    echo json_encode((new usuario())->crear(
+        $campo('txt_usuario'),
+        $campo('txt_contrasena'),
+        $campo('txt_nombre'),
+        $campo('txt_apellido'),
+        $campo('txt_email'),
+        $IP,
+        'CLIENTE',
+        $campo('txt_profesion')
+    ));
+} catch (\Throwable $e) {
+    error_log('[Registro] ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['message' => 'ERROR DE SISTEMA']);
+}

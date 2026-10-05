@@ -15,9 +15,34 @@ if (!$idUsuario) {
     exit;
 }
 
+$rol = strtoupper((string) ($_SESSION['administrador-tipoUsuario'] ?? ''));
+$esSupervisor = in_array($rol, ['ADMINISTRADOR', 'AUDITOR'], true);
+
+function denegar(): void {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Sin permiso']);
+    exit;
+}
+
+/** Deja solo opciones bien formadas: texto no vacio (max 500) y bandera esCorrecta. */
+function normalizarOpciones($opciones): array {
+    $limpias = [];
+    foreach (is_array($opciones) ? array_slice($opciones, 0, 50) : [] as $opc) {
+        $texto = is_array($opc) && is_scalar($opc['texto'] ?? null) ? trim((string) $opc['texto']) : '';
+        if ($texto === '') continue;
+        $limpias[] = ['texto' => mb_substr($texto, 0, 500), 'esCorrecta' => !empty($opc['esCorrecta'])];
+    }
+    return $limpias;
+}
+
 try {
     $modelo = new FormulariosModel();
     $metodo = $_SERVER['REQUEST_METHOD'];
+
+    // El auditor solo consulta.
+    if ($metodo !== 'GET' && $rol === 'AUDITOR') {
+        denegar();
+    }
 
     // ================================================================
     //  GET — List forms or get one
@@ -68,6 +93,7 @@ try {
         }
 
         if ($vista === 'todos') {
+            if (!$esSupervisor) denegar();
             $data = $modelo->getTodosFormularios();
             echo json_encode(['success' => true, 'formularios' => $data]);
             exit;
@@ -100,6 +126,7 @@ try {
         }
 
         if ($vista === 'estadisticas_admin') {
+            if (!$esSupervisor) denegar();
             $id = intval($_GET['id'] ?? 0);
             if ($id <= 0) {
                 echo json_encode(['success' => false, 'error' => 'ID requerido']);
@@ -123,10 +150,15 @@ try {
     // ================================================================
     if ($metodo === 'POST') {
         $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) $input = [];
         $accion = $input['accion'] ?? '';
+        // Los textos libres deben ser cadenas; cualquier otra cosa se trata como vacio.
+        foreach (['titulo', 'descripcion', 'texto', 'estado'] as $campo) {
+            if (isset($input[$campo]) && !is_string($input[$campo])) $input[$campo] = '';
+        }
 
         if ($accion === 'crear') {
-            $titulo = trim($input['titulo'] ?? '');
+            $titulo = mb_substr(trim($input['titulo'] ?? ''), 0, 255);
             $descripcion = trim($input['descripcion'] ?? '');
             if (empty($titulo)) {
                 echo json_encode(['success' => false, 'error' => 'Titulo requerido']);
@@ -142,7 +174,7 @@ try {
             $titulo = trim($input['titulo'] ?? '');
             $descripcion = trim($input['descripcion'] ?? '');
             $estado = $input['estado'] ?? 'borrador';
-            if ($id <= 0 || empty($titulo)) {
+            if ($id <= 0 || empty($titulo) || !in_array($estado, ['borrador', 'publicado', 'cerrado'], true)) {
                 echo json_encode(['success' => false, 'error' => 'Datos incompletos']);
                 exit;
             }
@@ -155,7 +187,7 @@ try {
             $idCuestionario = intval($input['idCuestionario'] ?? 0);
             $texto = trim($input['texto'] ?? '');
             $orden = intval($input['orden'] ?? 0);
-            $opciones = $input['opciones'] ?? [];
+            $opciones = normalizarOpciones($input['opciones'] ?? []);
             if ($idCuestionario <= 0 || empty($texto)) {
                 echo json_encode(['success' => false, 'error' => 'Datos incompletos']);
                 exit;
@@ -172,10 +204,13 @@ try {
         if ($accion === 'actualizar_pregunta') {
             $idPregunta = intval($input['idPregunta'] ?? 0);
             $texto = trim($input['texto'] ?? '');
-            $opciones = $input['opciones'] ?? [];
+            $opciones = normalizarOpciones($input['opciones'] ?? []);
             if ($idPregunta <= 0 || empty($texto)) {
                 echo json_encode(['success' => false, 'error' => 'Datos incompletos']);
                 exit;
+            }
+            if (!$modelo->verificarPropietarioPregunta($idPregunta, $idUsuario)) {
+                denegar();
             }
             $modelo->actualizarPregunta($idPregunta, $texto, $opciones);
             echo json_encode(['success' => true]);
@@ -187,6 +222,9 @@ try {
             if ($idPregunta <= 0) {
                 echo json_encode(['success' => false, 'error' => 'ID requerido']);
                 exit;
+            }
+            if (!$modelo->verificarPropietarioPregunta($idPregunta, $idUsuario)) {
+                denegar();
             }
             $modelo->eliminarPregunta($idPregunta);
             echo json_encode(['success' => true]);
@@ -242,5 +280,6 @@ try {
     echo json_encode(['success' => false, 'error' => 'Metodo no permitido']);
 } catch (\Throwable $e) {
     error_log('[Formularios] ' . $e->getMessage());
-    echo json_encode(['success' => false, 'error' => 'Error del servidor: ' . $e->getMessage()]);
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Error del servidor']);
 }

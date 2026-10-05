@@ -1,7 +1,4 @@
 <?php
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -9,7 +6,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 /*<Include classes>*/
-    include_once('../model/administrador.model.confirmacion.php');
+    include_once(__DIR__ . '/../model/administrador.model.confirmacion.php');
 /*</Include classes>*/
 
 /*<Import>*/
@@ -19,6 +16,8 @@ use administrador\Modules\ConfirmacionCorreo\Model\confirmacion\confirmacion as 
 $JSON_RESULT = [];
 
 try {
+    authLimitarIntentos('confirmar-correo|' . authClientIp(), 30, 900);
+
     /*<Instaciacion de objetos>*/
         $Object = new confirmacion();
     /*</Instaciacion de objetos>*/
@@ -64,7 +63,7 @@ try {
 
 } catch(Exception $e){
     $JSON_RESULT['message'] = 'Bad';
-    $JSON_RESULT['error'] = 'Error del servidor: ' . $e->getMessage();
+    $JSON_RESULT['error'] = 'Error del servidor';
     echo json_encode($JSON_RESULT);
 }
 /*</Controlador>*/

@@ -10,16 +10,27 @@ use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
 class JWTHelper {
-    private static $secretKey = 'TU_CLAVE_SECRETA_MUY_LARGA_Y_SEGURA_CAMBIAR_EN_PRODUCCION_2024';
     private static $algorithm = 'HS256';
-    private static $issuer = 'tu_dominio.com';
-    
+
+    /** El secreto vive solo en la variable de entorno JWT_SECRET (minimo 32 caracteres). */
+    private static function secretKey() {
+        $secret = getenv('JWT_SECRET');
+        if ($secret === false || strlen($secret) < 32) {
+            throw new \RuntimeException('JWT_SECRET no esta configurado');
+        }
+        return $secret;
+    }
+
+    private static function issuer() {
+        return getenv('APP_URL') ?: 'formularios-web';
+    }
+
     public static function generarAccessToken($userData) {
         $issuedAt = time();
         $expire = $issuedAt + (15 * 60);
-        
+
         $payload = [
-            'iss' => self::$issuer,
+            'iss' => self::issuer(),
             'iat' => $issuedAt,
             'exp' => $expire,
             'type' => 'access',
@@ -30,16 +41,16 @@ class JWTHelper {
                 'navegador' => $userData['navegador']
             ]
         ];
-        
-        return JWT::encode($payload, self::$secretKey, self::$algorithm);
+
+        return JWT::encode($payload, self::secretKey(), self::$algorithm);
     }
-    
+
     public static function generarRefreshToken($userData) {
         $issuedAt = time();
         $expire = $issuedAt + (7 * 24 * 60 * 60);
-        
+
         $payload = [
-            'iss' => self::$issuer,
+            'iss' => self::issuer(),
             'iat' => $issuedAt,
             'exp' => $expire,
             'type' => 'refresh',
@@ -49,13 +60,13 @@ class JWTHelper {
                 'tokenId' => bin2hex(random_bytes(16))
             ]
         ];
-        
-        return JWT::encode($payload, self::$secretKey, self::$algorithm);
+
+        return JWT::encode($payload, self::secretKey(), self::$algorithm);
     }
-    
+
     public static function validarToken($token) {
         try {
-            $decoded = JWT::decode($token, new Key(self::$secretKey, self::$algorithm));
+            $decoded = JWT::decode($token, new Key(self::secretKey(), self::$algorithm));
             return [
                 'valid' => true,
                 'data' => (array) $decoded->data,
@@ -68,12 +79,19 @@ class JWTHelper {
             return ['valid' => false, 'error' => 'TOKEN_INVALID'];
         }
     }
-    
+
     public static function obtenerTokenDeHeader() {
-        $headers = getallheaders();
-        $authHeader = $headers['Authorization'] ?? '';
-        
-        if (preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+        $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+        if ($authHeader === '' && function_exists('getallheaders')) {
+            foreach (getallheaders() as $nombre => $valor) {
+                if (strcasecmp($nombre, 'Authorization') === 0) {
+                    $authHeader = $valor;
+                    break;
+                }
+            }
+        }
+
+        if (preg_match('/^Bearer\s+(\S+)$/', $authHeader, $matches)) {
             return $matches[1];
         }
         return null;

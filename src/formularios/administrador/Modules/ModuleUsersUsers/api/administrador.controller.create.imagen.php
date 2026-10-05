@@ -1,31 +1,8 @@
 <?php
+header('Content-Type: application/json');
 
+require_once(__DIR__ . '/../../ModulePugins/administrador.Subidas.php');
 
-        $JSON_RESULT            = [];
-        
-        /*<Controlador>*/      
-            try{
-                  
-                /*</Proceso>*/  
-                    foreach($_FILES as $file){
-                        if($file["error"]==UPLOAD_ERR_OK){
-                            $Direccion = '/upload/'.date("Ymdhis").$file["name"];                            
-                            move_uploaded_file($file["tmp_name"], '/var/www/html'.$Direccion);                               
-                          
-                        }
-                    }    
-                /*</Proceso>*/ 
-                $JSON_RESULT['direccion']   = $Direccion;
-                $JSON_RESULT['message']     = 'Good';
-                /*<Respuesta>*/  
-                    echo json_encode($JSON_RESULT);
-                /*<Respuesta>*/  
+use administrador\Modules\ModulePugins\Subidas\Subidas;
 
-            } catch(Exepction $e){
-                $JSON_RESULT            = [];
-                $JSON_RESULT['message'] = 'Sorry errt server'; 
-            }            
-        /*</Controlador>*/    
-/*<Validacion de tocken>*/
-
-?>
+echo json_encode(Subidas::guardarImagen(reset($_FILES) ?: null, 'perfiles', 'perfil'));

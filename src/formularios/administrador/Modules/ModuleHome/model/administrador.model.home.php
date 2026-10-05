@@ -127,7 +127,7 @@ class HomeModel extends Conection
             $result['message'] = 'Good';
         } else {
             $result['message'] = 'Bad';
-            $result['error'] = mysqli_error($this->Connection);
+            error_log('[Backend] ' . mysqli_error($this->Connection)); $result['error'] = 'Error de base de datos';
         }
         $this->closet();
         return $result;
@@ -192,7 +192,7 @@ class HomeModel extends Conection
             $result['message'] = 'Good';
         } else {
             $result['message'] = 'Bad';
-            $result['error'] = mysqli_error($this->Connection);
+            error_log('[Backend] ' . mysqli_error($this->Connection)); $result['error'] = 'Error de base de datos';
         }
         $this->closet();
         return $result;
@@ -210,7 +210,7 @@ class HomeModel extends Conection
             $result['message'] = 'Good';
         } else {
             $result['message'] = 'Bad';
-            $result['error'] = mysqli_error($this->Connection);
+            error_log('[Backend] ' . mysqli_error($this->Connection)); $result['error'] = 'Error de base de datos';
         }
         $this->closet();
         return $result;
@@ -230,7 +230,7 @@ class HomeModel extends Conection
             $result['message'] = 'Good';
         } else {
             $result['message'] = 'Bad';
-            $result['error'] = mysqli_error($this->Connection);
+            error_log('[Backend] ' . mysqli_error($this->Connection)); $result['error'] = 'Error de base de datos';
         }
         $this->closet();
         return $result;
@@ -252,7 +252,7 @@ class HomeModel extends Conection
             $result['message'] = 'Good';
         } else {
             $result['message'] = 'Bad';
-            $result['error'] = mysqli_error($this->Connection);
+            error_log('[Backend] ' . mysqli_error($this->Connection)); $result['error'] = 'Error de base de datos';
         }
         $this->closet();
         return $result;
@@ -272,7 +272,7 @@ class HomeModel extends Conection
             $result['message'] = 'Good';
         } else {
             $result['message'] = 'Bad';
-            $result['error'] = mysqli_error($this->Connection);
+            error_log('[Backend] ' . mysqli_error($this->Connection)); $result['error'] = 'Error de base de datos';
         }
         $this->closet();
         return $result;
@@ -292,7 +292,7 @@ class HomeModel extends Conection
             $result['message'] = 'Good';
         } else {
             $result['message'] = 'Bad';
-            $result['error'] = mysqli_error($this->Connection);
+            error_log('[Backend] ' . mysqli_error($this->Connection)); $result['error'] = 'Error de base de datos';
         }
         $this->closet();
         return $result;
@@ -308,7 +308,7 @@ class HomeModel extends Conection
             $result['message'] = 'Good';
         } else {
             $result['message'] = 'Bad';
-            $result['error'] = mysqli_error($this->Connection);
+            error_log('[Backend] ' . mysqli_error($this->Connection)); $result['error'] = 'Error de base de datos';
         }
         $this->closet();
         return $result;
@@ -356,7 +356,7 @@ class HomeModel extends Conection
             $result['message'] = 'Good';
         } else {
             $result['message'] = 'Bad';
-            $result['error'] = mysqli_error($this->Connection);
+            error_log('[Backend] ' . mysqli_error($this->Connection)); $result['error'] = 'Error de base de datos';
         }
         $this->closet();
         return $result;
@@ -373,7 +373,7 @@ class HomeModel extends Conection
             $result['message'] = 'Good';
         } else {
             $result['message'] = 'Bad';
-            $result['error'] = mysqli_error($this->Connection);
+            error_log('[Backend] ' . mysqli_error($this->Connection)); $result['error'] = 'Error de base de datos';
         }
         $this->closet();
         return $result;
@@ -390,7 +390,7 @@ class HomeModel extends Conection
             $result['message'] = 'Good';
         } else {
             $result['message'] = 'Bad';
-            $result['error'] = mysqli_error($this->Connection);
+            error_log('[Backend] ' . mysqli_error($this->Connection)); $result['error'] = 'Error de base de datos';
         }
         $this->closet();
         return $result;
@@ -415,7 +415,7 @@ class HomeModel extends Conection
             $result['message'] = 'Good';
         } else {
             $result['message'] = 'Bad';
-            $result['error'] = mysqli_error($this->Connection);
+            error_log('[Backend] ' . mysqli_error($this->Connection)); $result['error'] = 'Error de base de datos';
         }
         $this->closet();
         return $result;
@@ -445,7 +445,7 @@ class HomeModel extends Conection
             $result['message'] = 'Good';
         } else {
             $result['message'] = 'Bad';
-            $result['error'] = mysqli_error($this->Connection);
+            error_log('[Backend] ' . mysqli_error($this->Connection)); $result['error'] = 'Error de base de datos';
         }
         $this->closet();
         return $result;
@@ -460,7 +460,7 @@ class HomeModel extends Conection
             $result['message'] = 'Good';
         } else {
             $result['message'] = 'Bad';
-            $result['error'] = mysqli_error($this->Connection);
+            error_log('[Backend] ' . mysqli_error($this->Connection)); $result['error'] = 'Error de base de datos';
         }
         $this->closet();
         return $result;
@@ -476,7 +476,7 @@ class HomeModel extends Conection
             $result['message'] = 'Good';
         } else {
             $result['message'] = 'Bad';
-            $result['error'] = mysqli_error($this->Connection);
+            error_log('[Backend] ' . mysqli_error($this->Connection)); $result['error'] = 'Error de base de datos';
         }
         $this->closet();
         return $result;
@@ -512,7 +512,7 @@ class HomeModel extends Conection
             $result['message'] = 'Good';
         } else {
             $result['message'] = 'Bad';
-            $result['error'] = mysqli_error($this->Connection);
+            error_log('[Backend] ' . mysqli_error($this->Connection)); $result['error'] = 'Error de base de datos';
         }
         $this->closet();
         return $result;
@@ -534,7 +534,7 @@ class HomeModel extends Conection
             $result['message'] = 'Good';
         } else {
             $result['message'] = 'Bad';
-            $result['error'] = mysqli_error($this->Connection);
+            error_log('[Backend] ' . mysqli_error($this->Connection)); $result['error'] = 'Error de base de datos';
         }
         $this->closet();
         return $result;

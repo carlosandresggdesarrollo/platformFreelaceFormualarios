@@ -9,7 +9,7 @@ include_once('../model/administrador.model.usuarioas.php');
 
 
 $JSON_RESULT            = [];
-$IP = isset($_SERVER['HTTP_CLIENT_IP']) ? $_SERVER['HTTP_CLIENT_IP'] : isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR']; 
+$IP = authClientIp(); 
 /*<Instaciacion de objetos>*/                
     $Object = new Usuarios_create();
     

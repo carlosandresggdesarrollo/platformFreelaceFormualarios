@@ -1,0 +1,15 @@
+# Carpeta de archivos subidos por usuarios: aqui nunca se ejecuta codigo.
+php_flag engine off
+Options -ExecCGI -Indexes
+
+<FilesMatch "\.(?i:php\d?|phtml|phar|pht|shtml|cgi|pl|py|sh|htaccess)$">
+  Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  # Un SVG abierto directamente no puede ejecutar scripts.
+  <FilesMatch "\.(?i:svg)$">
+    Header set Content-Security-Policy "script-src 'none'; sandbox"
+  </FilesMatch>
+</IfModule>

@@ -1,5 +1,5 @@
 <?php
-include_once('../../Modules/ModulePugins/administrador.Cofiguration.Conection.php');
+include_once(__DIR__ . '/../../Modules/ModulePugins/administrador.Cofiguration.Conection.php');
 /*<use>*/
     use  administrador\Modules\ModulePugins\Conection\Conection as Conection;
 /*<use>*/
@@ -8,6 +8,7 @@ class JWTModel extends Conection {
     private $conn;
     
     public function __construct() {
+        $this->cargarCredenciales();
         $host       = $this->Server ;
         $dbname     = $this->Database ;
         $username   = $this->User;
@@ -24,7 +25,8 @@ class JWTModel extends Conection {
                 ]
             );
         } catch (PDOException $e) {
-            throw new Exception("Error de conexión: " . $e->getMessage());
+            error_log('[JWTModel] ' . $e->getMessage());
+            throw new Exception('Error de conexion a la base de datos');
         }
     }
     
@@ -127,7 +129,7 @@ class JWTModel extends Conection {
                     imagen,
                     estatus
                 FROM usuarios 
-                WHERE idUsuario = :idUsuario AND bstate = 1 AND estatus = 'activo'";
+                WHERE idUsuario = :idUsuario AND bstate = 1 AND estatus IN ('ACTIVO', 'CONFIRMADA', 'PENDIENTE')";
         
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([':idUsuario' => $idUsuario]);
@@ -137,7 +139,7 @@ class JWTModel extends Conection {
     
     public function verificarUsuarioActivo($idUsuario) {
         $sql = "SELECT idUsuario FROM usuarios 
-                WHERE idUsuario = :idUsuario AND bstate = 1 AND estatus = 'activo'";
+                WHERE idUsuario = :idUsuario AND bstate = 1 AND estatus IN ('ACTIVO', 'CONFIRMADA', 'PENDIENTE')";
         
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([':idUsuario' => $idUsuario]);

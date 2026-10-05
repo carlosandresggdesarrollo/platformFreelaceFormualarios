@@ -26,8 +26,7 @@ namespace administrador\Modules\ModulePerfil\Model\usuario;
                     $JSON_RESULT['message']         = '';
                     $JSON_RESULT['error']           = '';
 
-                    session_start();
-                    $idUser                     = $_SESSION["administrador-idUsuario"];
+                    $idUser                     = intval($_SESSION["administrador-idUsuario"]);
                 /*</Variables> */
                 
                 /*<Query> */
@@ -37,7 +36,6 @@ namespace administrador\Modules\ModulePerfil\Model\usuario;
                                                 bstate      = 1 AND 
                                                 idUsuario   = '.$idUser.' ; ';
                 /*</Query> */
-                $JSON_RESULT['querySelect']     = $querySelect;
 
                 $this::open();            
                     if ($resultQuery = mysqli_query($this->Connection, $querySelect)) {
@@ -56,7 +54,7 @@ namespace administrador\Modules\ModulePerfil\Model\usuario;
                     } else {
                         /*<Respuesta>*/
                             $JSON_RESULT['message']         = "Bad";                          
-                            $JSON_RESULT['Error']           = "Error: <br>" . mysqli_error($this->Connection);
+                            $JSON_RESULT['Error']           = 'Error de base de datos';
                         /*</Respuesta>*/
                     }        
                 $this::closet();
@@ -82,14 +80,26 @@ namespace administrador\Modules\ModulePerfil\Model\usuario;
 
                 /*<Variables> */
                         /*</datos>*/
-                        session_start();
                         $DATE                       = date('Y-m-d h:i:s');
-                        $idUser                     = $_SESSION["administrador-idUsuario"];
+                        $idUser                     = intval($_SESSION["administrador-idUsuario"]);
                     /*<datos>*/
                     $JSON_RESULT                    = [];
                     $JSON_RESULT['message']         = '';
-                    $JSON_RESULT['error']           = '';                
-                /*</Variables> */        
+                    $JSON_RESULT['error']           = '';
+                /*</Variables> */
+
+                /*<Saneado de entradas: ids enteros y textos escapados>*/
+                    $idDatodGenerales   = intval($idDatodGenerales);
+                    $idMunicipio        = intval($idMunicipio);
+                    $idEstado           = intval($idEstado);
+                    $idPais             = intval($idPais);
+                    $ip                 = $IP;
+                    $this->open();
+                        foreach (['calle', 'noExterior', 'noInterior', 'codigoPostal', 'colonia', 'IP', 'ip'] as $campo) {
+                            $$campo = mysqli_real_escape_string($this->Connection, mb_substr((string) $$campo, 0, 200));
+                        }
+                    $this->closet();
+                /*</Saneado de entradas>*/
 
 
                 if($idDatodGenerales == 0){
@@ -130,7 +140,6 @@ namespace administrador\Modules\ModulePerfil\Model\usuario;
                     
                         /*</Query>*/
 
-                        $JSON_RESULT['queryInsert']   = $queryInsert;
 
                         $this->open();
                             if (mysqli_query($this->Connection, $queryInsert)) {
@@ -140,7 +149,7 @@ namespace administrador\Modules\ModulePerfil\Model\usuario;
                             } else {
                                 /*<Respuesta>*/
                                     $JSON_RESULT['message']             = "Bad";
-                                    $JSON_RESULT['Error']               = "Error: <br>" . mysqli_error($this->Connection);
+                                    $JSON_RESULT['Error']               = 'Error de base de datos';
                                 /*</Respuesta>*/
                             }        
                         $this->closet(); 
@@ -155,7 +164,6 @@ namespace administrador\Modules\ModulePerfil\Model\usuario;
                                                             observacion                     = " [ UPFATE '.$DATE.' ], [ idUser '.$idUser.' IP:  '.$IP.'] "
                                                         WHERE idUsuario                     = '.$idUser.';';
                         /*</Query>*/
-                        $JSON_RESULT['QueryDeleteUpdate']   = $QueryUpdate;
                         $this->open();
                             if (mysqli_query($this->Connection, $QueryUpdate)) {
                                 /*<Respuesta>*/
@@ -164,7 +172,7 @@ namespace administrador\Modules\ModulePerfil\Model\usuario;
                             } else {
                                 /*<Respuesta>*/
                                     $JSON_RESULT['message']             = "Bad";                                    
-                                    $JSON_RESULT['Error']               = "Error: <br>" . mysqli_error($this->Connection);
+                                    $JSON_RESULT['Error']               = 'Error de base de datos';
                                     return $JSON_RESULT;
                                 /*</Respuesta>*/
                             }        
@@ -187,9 +195,8 @@ namespace administrador\Modules\ModulePerfil\Model\usuario;
                                                         
                                                         fechaModificacion               = "'.$DATE.'",
                                                         observacion                     = " [ UPFATE '.$DATE.' ], [ idUser '.$idUser.' IP:  '.$IP.'] "
-                                                    WHERE idDgenerales       = '.$idDatodGenerales.';';
+                                                    WHERE idDgenerales       = '.$idDatodGenerales.' AND idUsuario = '.$idUser.';';
                         /*</Query>*/
-                        $JSON_RESULT['QueryDeleteUpdate']   = $QueryUpdate;
                         $this->open();
                             if (mysqli_query($this->Connection, $QueryUpdate)) {
                                 /*<Respuesta>*/
@@ -198,7 +205,7 @@ namespace administrador\Modules\ModulePerfil\Model\usuario;
                             } else {
                                 /*<Respuesta>*/
                                     $JSON_RESULT['message']             = "Bad";                                    
-                                    $JSON_RESULT['Error']               = "Error: <br>" . mysqli_error($this->Connection);
+                                    $JSON_RESULT['Error']               = 'Error de base de datos';
                                 /*</Respuesta>*/
                             }        
                         $this->closet(); 
@@ -212,7 +219,6 @@ namespace administrador\Modules\ModulePerfil\Model\usuario;
                                                             observacion                     = " [ UPFATE '.$DATE.' ], [ idUser '.$idUser.' IP:  '.$IP.'] "
                                                         WHERE idUsuario                     = '.$idUser.';';
                         /*</Query>*/
-                        $JSON_RESULT['QueryDeleteUpdate']   = $QueryUpdate;
                         $this->open();
                             if (mysqli_query($this->Connection, $QueryUpdate)) {
                                 /*<Respuesta>*/
@@ -221,7 +227,7 @@ namespace administrador\Modules\ModulePerfil\Model\usuario;
                             } else {
                                 /*<Respuesta>*/
                                     $JSON_RESULT['message']             = "Bad";                                    
-                                    $JSON_RESULT['Error']               = "Error: <br>" . mysqli_error($this->Connection);
+                                    $JSON_RESULT['Error']               = 'Error de base de datos';
                                     return $JSON_RESULT;
                                 /*</Respuesta>*/
                             }        
@@ -230,7 +236,6 @@ namespace administrador\Modules\ModulePerfil\Model\usuario;
 
                    
                 }   
-                session_start();
                 $_SESSION["administrador-estatus"] = "ACTIVO";
                 
                 return $JSON_RESULT;
@@ -250,7 +255,6 @@ namespace administrador\Modules\ModulePerfil\Model\usuario;
                 /*<Query> */
                     $querySelect = '    SELECT *  FROM  cat_paises  WHERE  bstate  = 1  ; ';
                 /*</Query> */
-                $JSON_RESULT['querySelect']     = $querySelect;
 
                 $this::open();            
                     if ($resultQuery = mysqli_query($this->Connection, $querySelect)) {
@@ -269,7 +273,7 @@ namespace administrador\Modules\ModulePerfil\Model\usuario;
                     } else {
                         /*<Respuesta>*/
                             $JSON_RESULT['message']         = "Bad";                          
-                            $JSON_RESULT['Error']           = "Error: <br>" . mysqli_error($this->Connection);
+                            $JSON_RESULT['Error']           = 'Error de base de datos';
                         /*</Respuesta>*/
                     }        
                 $this::closet();
@@ -290,7 +294,6 @@ namespace administrador\Modules\ModulePerfil\Model\usuario;
                 /*<Query> */
                     $querySelect = '    SELECT *  FROM  municipios_view  WHERE  bstate  = 1  ; ';
                 /*</Query> */
-                $JSON_RESULT['querySelect']     = $querySelect;
 
                 $this::open();            
                     if ($resultQuery = mysqli_query($this->Connection, $querySelect)) {
@@ -309,7 +312,7 @@ namespace administrador\Modules\ModulePerfil\Model\usuario;
                     } else {
                         /*<Respuesta>*/
                             $JSON_RESULT['message']         = "Bad";                          
-                            $JSON_RESULT['Error']           = "Error: <br>" . mysqli_error($this->Connection);
+                            $JSON_RESULT['Error']           = 'Error de base de datos';
                         /*</Respuesta>*/
                     }        
                 $this::closet();
@@ -330,7 +333,6 @@ namespace administrador\Modules\ModulePerfil\Model\usuario;
                 /*<Query> */
                     $querySelect = '    SELECT *  FROM  estados_view  WHERE  bstate  = 1  ; ';
                 /*</Query> */
-                $JSON_RESULT['querySelect']     = $querySelect;
 
                 $this::open();            
                     if ($resultQuery = mysqli_query($this->Connection, $querySelect)) {
@@ -349,7 +351,7 @@ namespace administrador\Modules\ModulePerfil\Model\usuario;
                     } else {
                         /*<Respuesta>*/
                             $JSON_RESULT['message']         = "Bad";                          
-                            $JSON_RESULT['Error']           = "Error: <br>" . mysqli_error($this->Connection);
+                            $JSON_RESULT['Error']           = 'Error de base de datos';
                         /*</Respuesta>*/
                     }        
                 $this::closet();
